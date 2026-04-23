@@ -48,6 +48,10 @@ export async function sendOTP(phone: string, ipAddress?: string): Promise<void> 
     data: { phone, code, expiresAt, verified: false, ipAddress },
   });
 
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`\n🔑 [TESTING] OTP for ${phone}: ${code}\n`);
+  }
+
   await sendSMS(phone, SMS_TEMPLATES.otp(code));
 }
 
