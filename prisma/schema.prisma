@@ -1,0 +1,178 @@
+// ELP Moi Chapter — Voting System
+// Full database schema matching AGENTS.md specification
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Admin ──────────────────────────────────────────────────────────────────────
+
+model Admin {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique @db.VarChar(50)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  role         String   @default("IEC") @db.VarChar(20) // IEC | SUPER_ADMIN
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relations
+  votersAdded        Voter[]        @relation("AddedByAdmin")
+  reviewedCandidates Candidate[]    @relation("ReviewedByAdmin")
+  configUpdates      VotingConfig[] @relation("UpdatedByAdmin")
+
+  @@index([role])
+  @@index([createdAt])
+  @@map("admins")
+}
+
+// ─── Voter ──────────────────────────────────────────────────────────────────────
+
+model Voter {
+  id         Int       @id @default(autoincrement())
+  phone      String    @unique @db.VarChar(20) // E.164: +2547XXXXXXXX
+  name       String?   @db.VarChar(100)
+  hasVoted   Boolean   @default(false) @map("has_voted")
+  votedAt    DateTime? @map("voted_at") @db.Timestamptz
+  deviceHash String?   @map("device_hash") @db.VarChar(64)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  addedById  Int?      @map("added_by")
+
+  // Relations
+  addedBy   Admin?     @relation("AddedByAdmin", fields: [addedById], references: [id])
+  candidate Candidate? @relation("CandidateVoter")
+  votes     Vote[]
+
+  @@index([addedById])
+  @@index([hasVoted])
+  @@index([votedAt])
+  @@index([createdAt])
+  @@index([name])
+  @@map("voters")
+}
+
+// ─── Position ───────────────────────────────────────────────────────────────────
+
+model Position {
+  id           Int    @id @default(autoincrement())
+  title        String @unique @db.VarChar(100) // e.g. "Chairperson"
+  displayOrder Int    @default(0) @map("display_order")
+
+  // Relations
+  candidates Candidate[] @relation("PositionCandidates")
+  votes      Vote[]      @relation("PositionVotes")
+
+  @@index([displayOrder])
+  @@map("positions")
+}
+
+// ─── Candidate ──────────────────────────────────────────────────────────────────
+
+model Candidate {
+  id            Int       @id @default(autoincrement())
+  name          String    @db.VarChar(100)
+  phone         String    @unique @db.VarChar(20)
+  school        String    @db.VarChar(150)
+  yearOfStudy   String    @map("year_of_study") @db.VarChar(50)
+  position      String    @db.VarChar(100)
+  scholarCode   String    @unique @map("scholar_code") @db.VarChar(50)
+  photoUrl      String    @map("photo_url") @db.Text
+  status        String    @default("PENDING") @db.VarChar(20) // PENDING | APPROVED | REJECTED
+  rejectionNote String?   @map("rejection_note") @db.Text
+  votes         Int       @default(0)
+  submittedAt   DateTime  @default(now()) @map("submitted_at") @db.Timestamptz
+  reviewedAt    DateTime? @map("reviewed_at") @db.Timestamptz
+  reviewedById  Int?      @map("reviewed_by")
+
+  // Relations
+  reviewedBy  Admin?   @relation("ReviewedByAdmin", fields: [reviewedById], references: [id])
+  voter       Voter    @relation("CandidateVoter", fields: [phone], references: [phone])
+  positionRef Position @relation("PositionCandidates", fields: [position], references: [title])
+  voteRecords Vote[]   @relation("CandidateVotes")
+
+  @@unique([id, position])
+  @@index([status, position])
+  @@index([submittedAt])
+  @@index([reviewedById])
+  @@map("candidates")
+}
+
+// ─── Vote ───────────────────────────────────────────────────────────────────────
+
+model Vote {
+  id          Int      @id @default(autoincrement())
+  voterId     Int      @map("voter_id")
+  candidateId Int      @map("candidate_id")
+  position    String   @db.VarChar(100)
+  castAt      DateTime @default(now()) @map("cast_at") @db.Timestamptz
+
+  // Relations
+  voter       Voter     @relation(fields: [voterId], references: [id])
+  candidate   Candidate @relation("CandidateVotes", fields: [candidateId, position], references: [id, position])
+  positionRef Position  @relation("PositionVotes", fields: [position], references: [title])
+
+  // One vote per position per voter — DB-level enforcement
+  @@unique([voterId, position])
+  @@index([candidateId])
+  @@index([position])
+  @@index([castAt])
+  @@map("votes")
+}
+
+// ─── OTP Request ────────────────────────────────────────────────────────────────
+
+model OtpRequest {
+  id        Int      @id @default(autoincrement())
+  phone     String   @db.VarChar(20)
+  code      String   @db.VarChar(10)
+  sentAt    DateTime @default(now()) @map("sent_at") @db.Timestamptz
+  verified  Boolean  @default(false)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz
+  attempts  Int      @default(0) // Track incorrect attempts
+
+  @@index([phone, sentAt])
+  @@index([phone, verified, expiresAt])
+  @@index([expiresAt])
+  @@map("otp_requests")
+}
+
+// ─── Voting Config ──────────────────────────────────────────────────────────────
+
+model VotingConfig {
+  id                   Int       @id @default(autoincrement())
+  opensAt              DateTime  @map("opens_at") @db.Timestamptz
+  closesAt             DateTime  @map("closes_at") @db.Timestamptz
+  candidateRegOpensAt  DateTime? @map("candidate_reg_opens_at") @db.Timestamptz
+  candidateRegClosesAt DateTime? @map("candidate_reg_closes_at") @db.Timestamptz
+  isManuallyClosed     Boolean   @default(false) @map("is_manually_closed")
+  updatedAt            DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+  updatedById          Int?      @map("updated_by")
+
+  // Relations
+  updatedBy Admin? @relation("UpdatedByAdmin", fields: [updatedById], references: [id])
+
+  @@index([updatedById])
+  @@map("voting_config")
+}
+
+// ─── SMS Log ───────────────────────────────────────────────────────────────────
+
+model SmsLog {
+  id            Int      @id @default(autoincrement())
+  phone         String   @db.VarChar(20)
+  message       String   @db.Text
+  messageId     String?  @unique @map("message_id") @db.VarChar(100) // AT message ID
+  status        String   @default("PENDING") @db.VarChar(50) // Sent, Submitted, Buffered, Rejected, Success, Failed
+  failureReason String?  @map("failure_reason") @db.Text
+  sentAt        DateTime @default(now()) @map("sent_at") @db.Timestamptz
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@index([phone])
+  @@index([messageId])
+  @@index([status])
+  @@index([sentAt])
+  @@map("sms_logs")
+}

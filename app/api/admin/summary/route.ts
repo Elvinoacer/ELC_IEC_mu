@@ -1,0 +1,41 @@
+import { NextRequest } from 'next/server';
+import prisma from '@/lib/prisma';
+import { success, serverError } from '@/lib/response';
+
+export const revalidate = 0;
+
+export async function GET(req: NextRequest) {
+  try {
+    const [
+      totalVoters,
+      totalVoted,
+      pendingCandidates,
+      approvedCandidates,
+      totalPositions
+    ] = await Promise.all([
+      prisma.voter.count(),
+      prisma.voter.count({ where: { hasVoted: true } }),
+      prisma.candidate.count({ where: { status: 'PENDING' } }),
+      prisma.candidate.count({ where: { status: 'APPROVED' } }),
+      prisma.position.count()
+    ]);
+
+    const turnout = totalVoters > 0 ? (totalVoted / totalVoters) * 100 : 0;
+
+    return success({
+      voters: {
+        total: totalVoters,
+        voted: totalVoted,
+        remaining: totalVoters - totalVoted,
+        turnout: Number(turnout.toFixed(1))
+      },
+      candidates: {
+        pending: pendingCandidates,
+        approved: approvedCandidates
+      },
+      positions: totalPositions
+    });
+  } catch (err) {
+    return serverError(err);
+  }
+}
