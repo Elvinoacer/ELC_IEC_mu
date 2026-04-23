@@ -57,6 +57,7 @@ export async function sendSMS(to: string, message: string): Promise<void> {
       options.senderId = senderId;
     }
 
+    console.log("[SMS Options]", JSON.stringify(options, null, 2));
     const result = (await sms.send(options)) as any;
     console.log("[AfricaTalking SMS result]", JSON.stringify(result, null, 2));
 
