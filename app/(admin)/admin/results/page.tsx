@@ -81,11 +81,11 @@ export default function AdminResultsPage() {
             const maxVotes = Math.max(...pos.candidates.map(c => c.votes));
             
             return (
-              <Card key={pos.position} padding="lg" className="border-white/5 bg-surface-800/50">
+              <Card key={pos.id} padding="lg" className="border-white/5 bg-surface-800/50">
                 <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-lg font-bold text-white">{pos.position}</h2>
+                  <h2 className="text-lg font-bold text-white">{pos.title}</h2>
                   <div className="px-2 py-1 rounded bg-surface-900 text-[10px] font-bold text-slate-500 uppercase tracking-tighter">
-                    {pos.total_votes_for_position} TOTAL
+                    {pos.totalVotes} TOTAL
                   </div>
                 </div>
 
