@@ -44,9 +44,10 @@ export default async function VotePage() {
   return (
     <VoterShell step="vote">
       <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white">Official Ballot</h1>
-          <p className="mt-1 text-sm text-slate-400">Vote position-by-position, then review before final submission.</p>
+        <div className="mb-8 rounded-2xl border border-white/10 bg-gradient-to-r from-surface-800/90 to-surface-900/70 p-6 shadow-xl">
+          <p className="text-xs uppercase tracking-[0.24em] text-accent-300/80">Official Election Ballot</p>
+          <h1 className="mt-2 text-3xl font-bold text-white">Cast Your Final Vote</h1>
+          <p className="mt-1 text-sm text-slate-300">Vote position-by-position, then review before final submission.</p>
         </div>
 
         <BallotWizard positions={positions} deviceHash={voter.deviceHash ?? ''} />

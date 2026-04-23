@@ -40,10 +40,11 @@ export async function POST(req: NextRequest) {
 
     const recentOtp = await findRecentReusableOTP(normalizedPhone);
     if (recentOtp) {
+      const remainingSeconds = Math.max(1, Math.ceil((recentOtp.expiresAt.getTime() - Date.now()) / 1000));
       return success({
         alreadySent: true,
         expiresAt: recentOtp.expiresAt.toISOString(),
-        cooldownSeconds: OTP_COOLDOWN_SECONDS,
+        cooldownSeconds: Math.max(OTP_COOLDOWN_SECONDS, remainingSeconds),
       });
     }
 

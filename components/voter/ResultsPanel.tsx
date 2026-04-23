@@ -49,10 +49,10 @@ export default function ResultsPanel({ initialData, compact = false }: { initial
   const positions = useMemo(() => data?.positions ?? [], [data]);
 
   return (
-    <Card padding="lg" className="h-full bg-surface-900/70 backdrop-blur border-white/10">
+    <Card padding="lg" className="h-full border-white/15 bg-gradient-to-br from-surface-800/80 via-surface-900/75 to-surface-900/70 backdrop-blur-xl shadow-[0_24px_60px_rgba(2,6,23,0.55)]">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-lg font-bold text-white">Live Results</h3>
-        <span className={`text-xs ${connected ? 'text-success-400' : 'text-slate-400'}`}>{connected ? '🟢 Live' : '⚪ Offline'}</span>
+        <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs ${connected ? 'bg-success-500/10 text-success-300' : 'bg-slate-500/10 text-slate-400'}`}>{connected ? '🟢 Live' : '⚪ Offline'}</span>
       </div>
 
       {data && (
@@ -65,7 +65,7 @@ export default function ResultsPanel({ initialData, compact = false }: { initial
         {positions.map((position) => {
           const candidates = compact ? position.candidates.slice(0, 2) : position.candidates;
           return (
-            <div key={position.id} className="rounded-xl border border-white/5 bg-surface-800/70 p-3">
+            <div key={position.id} className="rounded-xl border border-white/10 bg-surface-800/70 p-3 shadow-inner shadow-black/20">
               <p className="mb-2 text-sm font-semibold text-white">{position.title}</p>
               <div className="space-y-2">
                 {candidates.map((c) => (

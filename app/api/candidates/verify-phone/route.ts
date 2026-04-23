@@ -3,7 +3,7 @@ import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { success, error, serverError } from "@/lib/response";
 import { normalizePhone } from "@/lib/phone";
-import { sendOTP, checkOTPRateLimit } from "@/lib/otp";
+import { sendOTP, checkOTPRateLimit, findRecentReusableOTP } from "@/lib/otp";
 
 const phoneSchema = z.object({
   phone: z.string().min(1, "Phone is required"),
@@ -64,10 +64,19 @@ export async function POST(req: NextRequest) {
       return error("Too many OTP requests. Please try again later.", 429);
     }
 
-    // 4. Send OTP
-    await sendOTP(normalizedPhone, ipAddress);
+    const recentOtp = await findRecentReusableOTP(normalizedPhone);
+    if (recentOtp) {
+      return success({
+        message: "A verification code has already been sent to this number.",
+        alreadySent: true,
+        expiresAt: recentOtp.expiresAt.toISOString(),
+      });
+    }
 
-    return success({ message: "OTP sent successfully" });
+    // 4. Send OTP
+    const expiresAt = await sendOTP(normalizedPhone, ipAddress);
+
+    return success({ message: "OTP sent successfully", alreadySent: false, expiresAt: expiresAt.toISOString() });
   } catch (err) {
     return serverError(err);
   }
