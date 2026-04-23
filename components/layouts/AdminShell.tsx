@@ -257,7 +257,7 @@ export default function AdminShell({
       {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
-        <header className="h-16 border-b border-glass-border flex items-center justify-between px-6">
+        <header className="h-14 sm:h-16 border-b border-glass-border flex items-center justify-between px-3 sm:px-6">
           <div className="flex items-center gap-4">
             {/* Hamburger */}
             <button
@@ -280,7 +280,7 @@ export default function AdminShell({
             </button>
 
             {title && (
-              <h1 className="text-lg font-semibold text-white truncate">
+              <h1 className="text-base sm:text-lg font-semibold text-white truncate">
                 {title}
               </h1>
             )}
@@ -289,15 +289,15 @@ export default function AdminShell({
           <div className="flex-1" />
 
           {/* Right side */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <div className="flex items-center gap-2">
               <div className="pulse-dot" />
-              <span className="text-xs text-slate-400">Live</span>
+              <span className="text-[10px] sm:text-xs text-slate-400">Live</span>
             </div>
             <button
               onClick={handleLogout}
               disabled={isLoggingOut}
-              className="text-sm text-slate-400 hover:text-white transition-colors disabled:opacity-50"
+              className="text-xs sm:text-sm text-slate-400 hover:text-white transition-colors disabled:opacity-50"
             >
               {isLoggingOut ? "Logging out..." : "Logout"}
             </button>
@@ -305,7 +305,7 @@ export default function AdminShell({
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-6 overflow-y-auto">{children}</main>
+        <main className="flex-1 p-3 sm:p-6 overflow-y-auto">{children}</main>
       </div>
     </div>
   );

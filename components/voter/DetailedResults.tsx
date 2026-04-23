@@ -3,7 +3,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import type { ResultsPayload } from '@/lib/results';
-import Image from 'next/image';
 
 export default function DetailedResults({ initialData, hasAlreadyVoted = false }: { initialData: ResultsPayload | null; hasAlreadyVoted?: boolean }) {
   const [data, setData] = useState<ResultsPayload | null>(initialData);
@@ -39,10 +38,10 @@ export default function DetailedResults({ initialData, hasAlreadyVoted = false }
   return (
     <div className="w-full text-on-surface antialiased">
       {/* Hero Section */}
-      <section className="mb-12">
+      <section className="mb-6 sm:mb-12">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
-            <h1 className="text-4xl md:text-5xl font-bold text-white mb-2 font-[family-name:var(--font-outfit)] tracking-tight">Real-Time Results Dashboard</h1>
+            <h1 className="text-2xl sm:text-3xl md:text-5xl font-bold text-white mb-2 font-[family-name:var(--font-outfit)] tracking-tight">Real-Time Results Dashboard</h1>
             <div className="flex items-center gap-3">
               <span className="relative flex h-3 w-3">
                 <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${connected ? 'bg-accent-500' : 'bg-slate-500'}`}></span>
@@ -64,10 +63,10 @@ export default function DetailedResults({ initialData, hasAlreadyVoted = false }
       </section>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-12">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-6 mb-6 sm:mb-12">
         {/* Turnout Card */}
-        <div className="md:col-span-4 bg-white/5 backdrop-blur-md border border-white/10 p-6 rounded-2xl flex flex-col items-center justify-center text-center shadow-2xl">
-          <div className="relative w-32 h-32 mb-4">
+        <div className="md:col-span-4 bg-white/5 backdrop-blur-md border border-white/10 p-4 sm:p-6 rounded-2xl flex flex-col items-center justify-center text-center shadow-2xl">
+          <div className="relative w-24 h-24 sm:w-32 sm:h-32 mb-3 sm:mb-4">
             <svg className="w-full h-full transform -rotate-90">
               <circle className="text-white/5" cx="64" cy="64" fill="transparent" r="58" stroke="currentColor" strokeWidth="8"></circle>
               <circle 
@@ -80,7 +79,7 @@ export default function DetailedResults({ initialData, hasAlreadyVoted = false }
               ></circle>
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-2xl font-bold text-white">{turnout.percentage}%</span>
+              <span className="text-lg sm:text-2xl font-bold text-white">{turnout.percentage}%</span>
               <span className="text-[10px] font-bold text-slate-400 tracking-widest">TURNOUT</span>
             </div>
           </div>
@@ -93,11 +92,11 @@ export default function DetailedResults({ initialData, hasAlreadyVoted = false }
         </div>
 
         {/* Dashboard Controls */}
-        <div className="md:col-span-8 bg-white/5 backdrop-blur-md border border-white/10 p-6 rounded-2xl flex flex-col justify-between shadow-2xl">
+        <div className="md:col-span-8 bg-white/5 backdrop-blur-md border border-white/10 p-4 sm:p-6 rounded-2xl flex flex-col justify-between shadow-2xl">
           <div className="flex justify-between items-start">
             <div>
-              <h3 className="text-xl font-bold text-white mb-1">Live Feed Status</h3>
-              <p className="text-slate-400 text-sm">Data updates automatically as votes are recorded.</p>
+              <h3 className="text-base sm:text-xl font-bold text-white mb-1">Live Feed Status</h3>
+              <p className="text-slate-400 text-xs sm:text-sm">Data updates automatically as votes are recorded.</p>
             </div>
             <div className="flex items-center gap-3 bg-white/5 p-2 rounded-lg border border-white/5">
               <span className="text-[10px] font-bold uppercase tracking-tighter text-slate-300">Live Updates</span>
@@ -110,22 +109,22 @@ export default function DetailedResults({ initialData, hasAlreadyVoted = false }
             </div>
           </div>
           
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-8">
-            <div className="p-4 bg-white/5 rounded-xl border border-white/5">
+          <div className="grid grid-cols-2 gap-2 sm:gap-4 mt-4 sm:mt-8">
+            <div className="p-3 sm:p-4 bg-white/5 rounded-xl border border-white/5">
               <p className="text-[10px] text-slate-500 uppercase font-bold mb-1">Remaining</p>
-              <p className="text-xl font-bold text-white">{turnout.total - turnout.voted}</p>
+              <p className="text-base sm:text-xl font-bold text-white">{turnout.total - turnout.voted}</p>
             </div>
-            <div className="p-4 bg-white/5 rounded-xl border border-white/5">
+            <div className="p-3 sm:p-4 bg-white/5 rounded-xl border border-white/5">
               <p className="text-[10px] text-slate-500 uppercase font-bold mb-1">Positions</p>
-              <p className="text-xl font-bold text-white">{positions.length}</p>
+              <p className="text-base sm:text-xl font-bold text-white">{positions.length}</p>
             </div>
-            <div className="p-4 bg-white/5 rounded-xl border border-white/5">
+            <div className="p-3 sm:p-4 bg-white/5 rounded-xl border border-white/5">
               <p className="text-[10px] text-slate-500 uppercase font-bold mb-1">Candidates</p>
-              <p className="text-xl font-bold text-white">{positions.reduce((acc, p) => acc + p.candidates.length, 0)}</p>
+              <p className="text-base sm:text-xl font-bold text-white">{positions.reduce((acc, p) => acc + p.candidates.length, 0)}</p>
             </div>
-            <div className="p-4 bg-white/5 rounded-xl border border-white/5">
+            <div className="p-3 sm:p-4 bg-white/5 rounded-xl border border-white/5">
               <p className="text-[10px] text-slate-500 uppercase font-bold mb-1">Quorum</p>
-              <p className={`text-xl font-bold ${turnout.percentage >= 50 ? 'text-accent-500' : 'text-slate-400'}`}>
+              <p className={`text-base sm:text-xl font-bold ${turnout.percentage >= 50 ? 'text-accent-500' : 'text-slate-400'}`}>
                 {turnout.percentage >= 50 ? 'MET' : 'PENDING'}
               </p>
             </div>
@@ -134,7 +133,7 @@ export default function DetailedResults({ initialData, hasAlreadyVoted = false }
       </div>
 
       {/* Live Results Bento Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 min-[560px]:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
         {positions.map((position) => (
           <div key={position.id} className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden flex flex-col shadow-2xl transition-all hover:border-white/20">
             <div className="p-6 border-b border-white/5 bg-white/5">
