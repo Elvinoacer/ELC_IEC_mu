@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma';
 import PublicShell from '@/components/layouts/PublicShell';
 import CandidateRegistrationForm from '@/components/public/CandidateRegistrationForm';
+export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'Candidate Registration - ELP Moi Chapter',

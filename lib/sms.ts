@@ -48,8 +48,8 @@ export async function sendSMS(to: string, message: string): Promise<void> {
     const result = (await sms.send({
       to: [to],
       message,
-      from: process.env.AT_SENDER_ID || undefined,
-    })) as any;
+      from: process.env.AT_SENDER_ID,
+    } as any)) as any;
 
     // Extract messageId from the result (usually it's in SMSMessageData.Recipients[0].messageId)
     const recipient = result?.SMSMessageData?.Recipients?.[0];
