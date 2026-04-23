@@ -51,16 +51,30 @@ export async function sendSMS(to: string, message: string): Promise<void> {
       enqueue: true,
     };
 
-    if (process.env.AT_SENDER_ID) {
-      options.from = process.env.AT_SENDER_ID;
+    // Only use senderId if it is truly approved and mapped to your account
+    const senderId = process.env.AT_SENDER_ID?.trim();
+    if (senderId) {
+      options.senderId = senderId;
     }
 
     const result = (await sms.send(options)) as any;
-    console.log("[SMS RAW]", JSON.stringify(result, null, 2));
+    console.log("[AfricaTalking SMS result]", JSON.stringify(result, null, 2));
 
     const recipient = result?.SMSMessageData?.Recipients?.[0] || 
                      result?.SMSMessageData?.recipients?.[0] || 
                      result?.recipients?.[0];
+
+    if (!recipient) {
+      throw new Error(`No recipient response from Africa's Talking: ${JSON.stringify(result)}`);
+    }
+
+    // Africa's Talking status codes: 100=Processed, 101=Sent, 102=Queued
+    const statusCode = Number(recipient.statusCode);
+    if (![100, 101, 102].includes(statusCode)) {
+      throw new Error(
+        `Africa's Talking rejected SMS. statusCode=${recipient.statusCode}, status=${recipient.status}, number=${recipient.number}`
+      );
+    }
 
     const messageId = recipient?.messageId || 
                      recipient?.messageID || 
