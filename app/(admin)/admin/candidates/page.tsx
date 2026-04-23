@@ -132,14 +132,11 @@ export default function AdminCandidatesPage() {
   };
 
   return (
-    <AdminShell>
+    <AdminShell title="Candidate Review">
       <div className="fade-in space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-white font-[family-name:var(--font-outfit)]">
-              Candidate Review
-            </h1>
-            <p className="text-sm text-slate-400 mt-1">
+            <p className="text-sm text-slate-400">
               Review and manage candidate applications.
             </p>
           </div>

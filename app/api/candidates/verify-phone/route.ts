@@ -59,15 +59,17 @@ export async function POST(req: NextRequest) {
       // If REJECTED, they can re-apply.
     }
 
+    const ipAddress = req.headers.get("x-forwarded-for") || (req as any).ip || undefined;
+
     // 3. Rate limiting for OTP sends (max 5 per hour)
-    const canSend = await checkOTPRateLimit(normalizedPhone);
+    const canSend = await checkOTPRateLimit(normalizedPhone, ipAddress);
 
     if (!canSend) {
       return error("Too many OTP requests. Please try again later.", 429);
     }
 
     // 4. Send OTP
-    await sendOTP(normalizedPhone);
+    await sendOTP(normalizedPhone, ipAddress);
 
     return success({ message: "OTP sent successfully" });
   } catch (err) {

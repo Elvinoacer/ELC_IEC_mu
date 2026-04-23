@@ -23,6 +23,7 @@ model Admin {
   votersAdded        Voter[]        @relation("AddedByAdmin")
   reviewedCandidates Candidate[]    @relation("ReviewedByAdmin")
   configUpdates      VotingConfig[] @relation("UpdatedByAdmin")
+  auditLogs          AuditLog[]
 
   @@index([role])
   @@index([createdAt])
@@ -132,6 +133,7 @@ model OtpRequest {
   verified  Boolean  @default(false)
   expiresAt DateTime @map("expires_at") @db.Timestamptz
   attempts  Int      @default(0) // Track incorrect attempts
+  ipAddress String?  @map("ip_address") @db.VarChar(45)
 
   @@index([phone, sentAt])
   @@index([phone, verified, expiresAt])
@@ -175,4 +177,40 @@ model SmsLog {
   @@index([status])
   @@index([sentAt])
   @@map("sms_logs")
+}
+
+// ─── Audit & Logging ────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  adminId   Int?     @map("admin_id")
+  action    String   @db.VarChar(100) // e.g. "APPROVE_CANDIDATE", "RESET_VOTER", "UPDATE_CONFIG"
+  entity    String   @db.VarChar(50) // e.g. "Candidate", "Voter", "VotingConfig"
+  entityId  String?  @map("entity_id")
+  details   Json? // Store old/new values or extra info
+  ipAddress String?  @map("ip_address") @db.VarChar(45)
+  userAgent String?  @map("user_agent") @db.Text
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  admin Admin? @relation(fields: [adminId], references: [id])
+
+  @@index([adminId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model VoteAttempt {
+  id         Int      @id @default(autoincrement())
+  voterId    Int?     @map("voter_id")
+  phone      String?  @db.VarChar(20)
+  status     String   @db.VarChar(20) // SUCCESS | FAILED | DUPLICATE | OUTSIDE_WINDOW
+  reason     String?  @db.Text
+  ipAddress  String?  @map("ip_address") @db.VarChar(45)
+  deviceHash String?  @map("device_hash") @db.VarChar(64)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("vote_attempts")
 }

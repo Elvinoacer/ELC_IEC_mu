@@ -34,7 +34,7 @@ export default function AdminDashboardPage() {
 
   if (loading) {
     return (
-      <AdminShell>
+      <AdminShell title="Election Dashboard">
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="animate-pulse text-slate-500">Loading metrics...</div>
         </div>
@@ -45,11 +45,10 @@ export default function AdminDashboardPage() {
   if (!data) return null;
 
   return (
-    <AdminShell>
+    <AdminShell title="Election Dashboard">
       <div className="fade-in space-y-8">
         <div>
-          <h1 className="text-2xl font-bold text-white font-[family-name:var(--font-outfit)]">Election Dashboard</h1>
-          <p className="text-sm text-slate-400 mt-1">Live overview of the ELP Moi Chapter voting process.</p>
+          <p className="text-sm text-slate-400">Live overview of the ELP Moi Chapter voting process.</p>
         </div>
 
         {/* Stats Grid */}

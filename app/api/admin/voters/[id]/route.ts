@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { success, error, serverError } from "@/lib/response";
 import { requireAdminSession } from "@/lib/admin-auth";
+import { logAudit } from "@/lib/audit";
 
 export async function DELETE(
   req: NextRequest,
@@ -34,6 +35,15 @@ export async function DELETE(
       where: { id: voterId },
     });
 
+    await logAudit(
+      req,
+      auth.admin.id,
+      "DELETE_VOTER",
+      "Voter",
+      voterId,
+      { phone: voter.phone, name: voter.name }
+    );
+
     return success({ message: "Voter deleted successfully" });
   } catch (err) {
     return serverError(err);
@@ -63,11 +73,21 @@ export async function PATCH(
         where: { id: voterId },
         data: { name: name || null },
       });
+
+      await logAudit(
+        req,
+        auth.admin.id,
+        "EDIT_VOTER",
+        "Voter",
+        voterId,
+        { phone: voter.phone, oldName: voter.name, newName: name }
+      );
+
       return success({ message: "Voter name updated" });
     } 
     
     if (action === 'reset') {
-      // Used for genuine errors only (e.g., device locked to wrong person during testing)
+      // Used for genuine errors only
       await prisma.voter.update({
         where: { id: voterId },
         data: { 
@@ -80,6 +100,16 @@ export async function PATCH(
       await prisma.vote.deleteMany({
         where: { voterId },
       });
+
+      await logAudit(
+        req,
+        auth.admin.id,
+        "RESET_VOTER",
+        "Voter",
+        voterId,
+        { phone: voter.phone }
+      );
+
       return success({ message: "Voter has been reset successfully" });
     }
 

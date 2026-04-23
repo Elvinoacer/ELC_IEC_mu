@@ -49,17 +49,16 @@ export default function AdminResultsPage() {
   if (!data) return null;
 
   return (
-    <AdminShell>
+    <AdminShell title="Election Results">
       <div className="fade-in space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-white font-[family-name:var(--font-outfit)] flex items-center gap-2">
-              Election Results
+            <div className="flex items-center gap-2">
               {isConnected && (
-                <span className="w-2 h-2 rounded-full bg-success-500 animate-pulse" />
+                <span className="w-2 h-2 rounded-full bg-success-500 animate-pulse" title="Connected to live feed" />
               )}
-            </h1>
-            <p className="text-sm text-slate-400 mt-1">Monitor live tallies and export audit data.</p>
+              <p className="text-sm text-slate-400">Monitor live tallies and export audit data.</p>
+            </div>
           </div>
           <div className="flex gap-2">
             <a 

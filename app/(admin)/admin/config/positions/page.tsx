@@ -113,12 +113,11 @@ export default function AdminPositionsPage() {
   };
 
   return (
-    <AdminShell>
+    <AdminShell title="Ballot Positions">
       <div className="fade-in space-y-6 max-w-4xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-white font-[family-name:var(--font-outfit)]">Ballot Positions</h1>
-            <p className="text-sm text-slate-400 mt-1">Manage positions and their display order on the ballot.</p>
+            <p className="text-sm text-slate-400">Manage positions and their display order on the ballot.</p>
           </div>
           <Button onClick={() => setIsAdding(true)}>
             + Add Position

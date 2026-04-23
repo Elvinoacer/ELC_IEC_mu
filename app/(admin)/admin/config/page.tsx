@@ -116,11 +116,10 @@ export default function AdminConfigPage() {
   }
 
   return (
-    <AdminShell>
+    <AdminShell title="System Configuration">
       <div className="fade-in space-y-6 max-w-4xl mx-auto">
         <div>
-          <h1 className="text-2xl font-bold text-white font-[family-name:var(--font-outfit)]">System Configuration</h1>
-          <p className="text-sm text-slate-400 mt-1">Manage election timelines and emergency controls.</p>
+          <p className="text-sm text-slate-400">Manage election timelines and emergency controls.</p>
         </div>
 
         {error && (

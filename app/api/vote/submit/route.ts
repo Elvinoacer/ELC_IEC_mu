@@ -3,7 +3,8 @@ import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { success, error, serverError } from '@/lib/response';
 import { verifyVoterToken } from '@/lib/jwt';
-import { generateResultsPayload } from '@/lib/results'; // We need to create this helper
+import { generateResultsPayload } from '@/lib/results';
+import { logVoteAttempt } from '@/lib/audit';
 
 const submitSchema = z.object({
   deviceHash: z.string().min(1, 'Device fingerprint missing'),
@@ -14,6 +15,10 @@ const submitSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  let voterId: number | undefined;
+  let phone: string | undefined;
+  let deviceHashStr: string | undefined;
+
   try {
     // 1. Verify Voter JWT
     const token = req.cookies.get('vote_session')?.value;
@@ -22,7 +27,8 @@ export async function POST(req: NextRequest) {
     const payload = await verifyVoterToken(token);
     if (!payload || !payload.id) return error('Invalid session.', 401);
 
-    const voterId = payload.id as number;
+    voterId = payload.id;
+    phone = payload.phone;
 
     const body = await req.json();
     const result = submitSchema.safeParse(body);
@@ -30,9 +36,9 @@ export async function POST(req: NextRequest) {
     if (!result.success) return error(result.error.issues[0].message, 400);
 
     const { deviceHash, selections } = result.data;
+    deviceHashStr = deviceHash;
 
     // 2. Transaction: Lock voter, verify not voted, cast votes, update stats
-    // Note: We use interactive transaction to execute logic safely
     await prisma.$transaction(async (tx) => {
       // Row-level lock on voter to prevent race conditions (double vote)
       const voter = await tx.$queryRaw<{ id: number; has_voted: boolean }[]>`
@@ -56,7 +62,7 @@ export async function POST(req: NextRequest) {
         // Insert vote
         await tx.vote.create({
           data: {
-            voterId,
+            voterId: voterId!,
             candidateId: sel.candidateId,
             position: sel.position,
           }
@@ -80,6 +86,9 @@ export async function POST(req: NextRequest) {
       });
     });
 
+    // Log success
+    await logVoteAttempt(req, 'SUCCESS', { voterId, phone, deviceHash: deviceHashStr });
+
     // 3. Clear cookie
     const clearCookie = `vote_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Strict`;
 
@@ -93,7 +102,6 @@ export async function POST(req: NextRequest) {
       });
     } catch (e) {
       console.error('Failed to trigger socket.io broadcast:', e);
-      // Don't fail the vote if broadcast fails
     }
 
     const res = success({ message: 'Vote submitted successfully' });
@@ -101,6 +109,14 @@ export async function POST(req: NextRequest) {
     return res;
 
   } catch (err: any) {
+    const status = err.message === 'ALREADY_VOTED' ? 'DUPLICATE' : 'FAILED';
+    await logVoteAttempt(req, status, { 
+      voterId: voterId, 
+      phone: phone, 
+      deviceHash: deviceHashStr,
+      reason: err.message 
+    });
+
     if (err.message === 'ALREADY_VOTED') {
       return error('You have already cast your vote.', 409);
     }

@@ -14,15 +14,27 @@ function generateCode(digits = OTP_DIGITS): string {
   return String(Math.floor(Math.random() * 10 ** digits)).padStart(digits, '0');
 }
 
-export async function checkOTPRateLimit(phone: string): Promise<boolean> {
+export async function checkOTPRateLimit(phone: string, ipAddress?: string): Promise<boolean> {
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-  const count = await prisma.otpRequest.count({
+  
+  // 1. Check by phone
+  const phoneCount = await prisma.otpRequest.count({
     where: { phone, sentAt: { gt: oneHourAgo } },
   });
-  return count < OTP_MAX_PER_HOUR;
+  if (phoneCount >= OTP_MAX_PER_HOUR) return false;
+
+  // 2. Check by IP (stricter limit to prevent bulk spam)
+  if (ipAddress) {
+    const ipCount = await prisma.otpRequest.count({
+      where: { ipAddress, sentAt: { gt: oneHourAgo } },
+    });
+    if (ipCount >= (OTP_MAX_PER_HOUR * 2)) return false; // Allow 10 per IP per hour
+  }
+
+  return true;
 }
 
-export async function sendOTP(phone: string): Promise<void> {
+export async function sendOTP(phone: string, ipAddress?: string): Promise<void> {
   const code = generateCode();
   const expiresAt = new Date(Date.now() + OTP_TTL_MS);
 
@@ -33,7 +45,7 @@ export async function sendOTP(phone: string): Promise<void> {
   });
 
   await prisma.otpRequest.create({
-    data: { phone, code, expiresAt, verified: false },
+    data: { phone, code, expiresAt, verified: false, ipAddress },
   });
 
   await sendSMS(phone, SMS_TEMPLATES.otp(code));

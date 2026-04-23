@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { success, error, serverError } from "@/lib/response";
 import { sendSMS, SMS_TEMPLATES } from "@/lib/sms";
 import { requireAdminSession } from "@/lib/admin-auth";
+import { logAudit } from "@/lib/audit";
 
 const statusSchema = z.object({
   status: z.enum(["APPROVED", "REJECTED"]),
@@ -65,7 +66,22 @@ export async function PATCH(
       },
     });
 
-    // Send notification SMS
+    // 2. Log audit
+    await logAudit(
+      req,
+      adminId,
+      status === "APPROVED" ? "APPROVE_CANDIDATE" : "REJECT_CANDIDATE",
+      "Candidate",
+      candidateId,
+      { 
+        status, 
+        rejectionNote, 
+        candidateName: candidate.name,
+        position: candidate.position 
+      }
+    );
+
+    // 3. Send notification SMS
     if (status === "APPROVED") {
       await sendSMS(
         candidate.phone,

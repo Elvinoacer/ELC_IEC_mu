@@ -53,14 +53,16 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    const ipAddress = req.headers.get('x-forwarded-for') || (req as any).ip || undefined;
+
     // 4. Rate limiting for OTP sends
-    const canSend = await checkOTPRateLimit(normalizedPhone);
+    const canSend = await checkOTPRateLimit(normalizedPhone, ipAddress);
     if (!canSend) {
       return error('Too many OTP requests. Please try again later.', 429);
     }
 
     // 5. Send OTP
-    await sendOTP(normalizedPhone);
+    await sendOTP(normalizedPhone, ipAddress);
 
     return success({ message: 'OTP sent successfully' });
   } catch (err) {
