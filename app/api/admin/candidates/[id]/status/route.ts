@@ -73,30 +73,40 @@ export async function PATCH(
       status === "APPROVED" ? "APPROVE_CANDIDATE" : "REJECT_CANDIDATE",
       "Candidate",
       candidateId,
-      { 
-        status, 
-        rejectionNote, 
+      {
+        status,
+        rejectionNote,
         candidateName: candidate.name,
-        position: candidate.position 
-      }
+        position: candidate.position,
+      },
     );
 
-    // 3. Send notification SMS
-    if (status === "APPROVED") {
-      await sendSMS(
-        candidate.phone,
-        SMS_TEMPLATES.candidateApproved(candidate.position),
+    // 3. Send notification SMS (non-blocking for status update success)
+    let smsWarning: string | null = null;
+    try {
+      if (status === "APPROVED") {
+        await sendSMS(
+          candidate.phone,
+          SMS_TEMPLATES.candidateApproved(candidate.position),
+        );
+      } else if (status === "REJECTED") {
+        await sendSMS(
+          candidate.phone,
+          SMS_TEMPLATES.candidateRejected(candidate.position, rejectionNote!),
+        );
+      }
+    } catch (smsErr) {
+      console.error(
+        `[candidate-status] Status updated but SMS failed for candidate ${candidateId}:`,
+        smsErr,
       );
-    } else if (status === "REJECTED") {
-      await sendSMS(
-        candidate.phone,
-        SMS_TEMPLATES.candidateRejected(candidate.position, rejectionNote!),
-      );
+      smsWarning = "Candidate status was updated, but SMS delivery failed.";
     }
 
     return success({
       message: `Candidate ${status.toLowerCase()} successfully`,
       candidate: updated,
+      smsWarning,
     });
   } catch (err) {
     return serverError(err);

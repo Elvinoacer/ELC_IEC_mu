@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { success, error, serverError } from "@/lib/response";
-import { normalizePhone, isValidKenyanPhone } from "@/lib/phone";
+import { normalizePhone } from "@/lib/phone";
 import { requireAdminSession } from "@/lib/admin-auth";
 import { logAudit } from "@/lib/audit";
 
@@ -48,11 +48,6 @@ export async function POST(req: NextRequest) {
     const seenPhonesInBatch = new Set<string>();
 
     for (const row of rows) {
-      if (!isValidKenyanPhone(row.phone)) {
-        invalidCount++;
-        continue;
-      }
-
       const normalized = normalizePhone(row.phone);
       if (!normalized) {
         invalidCount++;
@@ -97,19 +92,12 @@ export async function POST(req: NextRequest) {
       validCount = finalVotersToInsert.length;
     }
 
-    await logAudit(
-      req,
-      adminId,
-      "BULK_IMPORT_VOTERS",
-      "Voter",
-      undefined,
-      { 
-        added: validCount, 
-        duplicates: duplicateCount, 
-        invalid: invalidCount,
-        total: rows.length 
-      }
-    );
+    await logAudit(req, adminId, "BULK_IMPORT_VOTERS", "Voter", undefined, {
+      added: validCount,
+      duplicates: duplicateCount,
+      invalid: invalidCount,
+      total: rows.length,
+    });
 
     return success({
       message: "Bulk import completed",
