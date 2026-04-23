@@ -19,7 +19,7 @@ export default function VoterShell({ children, step = 'phone' }: VoterShellProps
   const currentIndex = steps.findIndex((s) => s.key === step);
 
   return (
-    <div className="min-h-dvh bg-gradient-main flex flex-col">
+    <div className="min-h-dvh bg-gradient-main flex flex-col overflow-x-hidden">
       {/* Background */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-brand-600/8 rounded-full blur-3xl" />

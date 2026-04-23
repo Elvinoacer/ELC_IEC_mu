@@ -1,10 +1,22 @@
+'use client';
+
 import React from 'react';
 import ELPLogo from '@/components/ELPLogo';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 export default function PublicShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+
+  const navItems = [
+    { href: '/results', label: 'Live', icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /> },
+    { href: '/register-candidate', label: 'Candidates', icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /> },
+    { href: '/', label: 'Turnout', icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /> },
+    { href: '/admin', label: 'Account', icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /> },
+  ];
+
   return (
-    <div className="min-h-dvh bg-gradient-main flex flex-col">
+    <div className="min-h-dvh bg-gradient-main flex flex-col overflow-x-hidden">
       {/* Decorative background elements */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-brand-600/8 rounded-full blur-3xl" />
@@ -19,8 +31,8 @@ export default function PublicShell({ children }: { children: React.ReactNode })
             <ELPLogo />
           </Link>
           <nav className="hidden md:flex items-center gap-6">
-            <Link href="/results" className="text-brand-400 border-b-2 border-brand-500 pb-1 font-semibold text-sm">Results</Link>
-            <Link href="/register-candidate" className="text-slate-400 hover:text-white transition-colors font-semibold text-sm">Run for Office</Link>
+            <Link href="/results" className={`${pathname === '/results' ? 'text-brand-400 border-b-2 border-brand-500' : 'text-slate-400 hover:text-white'} pb-1 font-semibold text-sm transition-all`}>Results</Link>
+            <Link href="/register-candidate" className={`${pathname === '/register-candidate' ? 'text-brand-400 border-b-2 border-brand-500' : 'text-slate-400 hover:text-white'} pb-1 font-semibold text-sm transition-all`}>Run for Office</Link>
           </nav>
         </div>
         <div className="flex items-center gap-2 sm:gap-4">
@@ -34,28 +46,33 @@ export default function PublicShell({ children }: { children: React.ReactNode })
       </header>
 
       {/* Main content */}
-      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-[var(--spacing-page)] pt-20 sm:pt-24 pb-12">
+      <main className="relative z-10 flex-1 flex flex-col items-center px-[var(--spacing-page)] pt-20 sm:pt-24 pb-12 w-full">
         {children}
       </main>
 
       {/* BottomNavBar (Mobile Only) */}
-      <nav className="fixed bottom-0 w-full grid grid-cols-4 gap-1 p-2 md:hidden bg-surface-900/80 backdrop-blur-xl border-t border-white/10 z-50 rounded-t-2xl shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
-        <Link href="/results" className="flex flex-col items-center justify-center text-brand-500 bg-brand-500/10 rounded-xl px-2 py-1.5">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-          <span className="text-[10px] font-bold uppercase tracking-widest mt-0.5">Live</span>
-        </Link>
-        <Link href="/register-candidate" className="flex flex-col items-center justify-center text-slate-500 hover:text-brand-400 rounded-xl px-2 py-1.5">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-          <span className="text-[10px] font-bold uppercase tracking-widest mt-0.5">Candidates</span>
-        </Link>
-        <Link href="/" className="flex flex-col items-center justify-center text-slate-500 hover:text-brand-400 rounded-xl px-2 py-1.5">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
-          <span className="text-[10px] font-bold uppercase tracking-widest mt-0.5">Turnout</span>
-        </Link>
-        <Link href="/admin" className="flex flex-col items-center justify-center text-slate-500 hover:text-brand-400 rounded-xl px-2 py-1.5">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-          <span className="text-[10px] font-bold uppercase tracking-widest mt-0.5">Account</span>
-        </Link>
+      <nav className="fixed bottom-0 left-0 right-0 grid grid-cols-4 gap-1 p-2 md:hidden bg-surface-900/80 backdrop-blur-xl border-t border-white/10 z-50 rounded-t-2xl shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
+        {navItems.map((item) => {
+          const isActive = pathname === item.href;
+          return (
+            <Link 
+              key={item.href}
+              href={item.href} 
+              className={`flex flex-col items-center justify-center rounded-xl px-2 py-1.5 transition-all duration-300 ${
+                isActive 
+                  ? 'text-brand-500 bg-brand-500/10 shadow-[inset_0_0_12px_rgba(163,42,41,0.1)]' 
+                  : 'text-slate-500 hover:text-brand-400 hover:bg-white/5'
+              }`}
+            >
+              <svg className={`w-5 h-5 transition-transform duration-300 ${isActive ? 'scale-110' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {item.icon}
+              </svg>
+              <span className={`text-[10px] font-bold uppercase tracking-widest mt-0.5 transition-all ${isActive ? 'opacity-100' : 'opacity-70'}`}>
+                {item.label}
+              </span>
+            </Link>
+          );
+        })}
       </nav>
 
       {/* Footer */}
