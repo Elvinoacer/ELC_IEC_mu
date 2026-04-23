@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAdminSession } from "@/lib/admin-auth";
+import { logAudit } from "@/lib/audit";
 
 export async function GET(req: NextRequest) {
   try {
@@ -25,6 +26,15 @@ export async function GET(req: NextRequest) {
     });
 
     const csvContent = [header, ...rows].join("\n");
+
+    await logAudit(
+      req,
+      auth.admin.id,
+      "EXPORT_VOTERS",
+      "Voter",
+      undefined,
+      { count: voters.length }
+    );
 
     return new NextResponse(csvContent, {
       status: 200,

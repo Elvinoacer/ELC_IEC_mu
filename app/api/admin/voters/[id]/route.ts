@@ -97,6 +97,12 @@ export async function PATCH(
         return error("Unauthorized. Only a SUPER_ADMIN can reset voter status.", 403);
       }
 
+      // Capture current votes for audit before deletion
+      const currentVotes = await prisma.vote.findMany({
+        where: { voterId },
+        include: { candidate: { select: { name: true, position: true } } }
+      });
+
       // Used for genuine errors only
       await prisma.voter.update({
         where: { id: voterId },
@@ -117,7 +123,14 @@ export async function PATCH(
         "RESET_VOTER",
         "Voter",
         voterId,
-        { phone: voter.phone, reason }
+        { 
+          phone: voter.phone, 
+          reason,
+          deletedVotes: currentVotes.map(v => ({ 
+            position: v.position, 
+            candidate: v.candidate.name 
+          }))
+        }
       );
 
       return success({ message: "Voter has been reset successfully" });

@@ -38,6 +38,20 @@ export async function POST(req: NextRequest) {
     const { deviceHash, selections } = result.data;
     deviceHashStr = deviceHash;
 
+    // Validation: Check for duplicate positions or candidates in the same payload
+    const seenPositions = new Set<string>();
+    const seenCandidates = new Set<number>();
+    for (const sel of selections) {
+      if (seenPositions.has(sel.position)) {
+        return error(`Multiple selections detected for the same position: ${sel.position}`, 400);
+      }
+      if (seenCandidates.has(sel.candidateId)) {
+        return error(`Duplicate candidate selected across positions: ${sel.candidateId}`, 400);
+      }
+      seenPositions.add(sel.position);
+      seenCandidates.add(sel.candidateId);
+    }
+
     // 2. Transaction: Lock voter, verify not voted, cast votes, update stats
     await prisma.$transaction(async (tx) => {
       // Row-level lock on voter to prevent race conditions (double vote)
