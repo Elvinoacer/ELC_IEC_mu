@@ -10,7 +10,7 @@ import {
   deleteFile,
   extractKeyFromUrl,
 } from "@/lib/upload";
-import { sendSMS, SMS_TEMPLATES } from "@/lib/sms";
+import { trySendSMS, SMS_TEMPLATES } from "@/lib/sms";
 import { normalizePhone } from "@/lib/phone";
 
 const candidateRegistrationSchema = z.object({
@@ -253,17 +253,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    let smsWarning: string | null = null;
-    try {
-      await sendSMS(sessionPhone, SMS_TEMPLATES.candidateReceived(position));
-    } catch (smsErr) {
-      console.error(
-        "[candidate-register] Application saved but SMS failed:",
-        smsErr,
-      );
-      smsWarning =
-        "Application saved, but SMS confirmation could not be delivered.";
-    }
+    const smsSent = await trySendSMS(sessionPhone, SMS_TEMPLATES.candidateReceived(position));
+    const smsWarning = smsSent ? null : "Application saved, but SMS confirmation could not be delivered.";
 
     return success(
       {

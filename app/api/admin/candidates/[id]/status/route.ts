@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { success, error, serverError } from "@/lib/response";
-import { sendSMS, SMS_TEMPLATES } from "@/lib/sms";
+import { trySendSMS, SMS_TEMPLATES } from "@/lib/sms";
 import { requireAdminSession } from "@/lib/admin-auth";
 import { logAudit } from "@/lib/audit";
 
@@ -81,27 +81,20 @@ export async function PATCH(
       },
     );
 
-    // 3. Send notification SMS (non-blocking for status update success)
-    let smsWarning: string | null = null;
-    try {
-      if (status === "APPROVED") {
-        await sendSMS(
-          candidate.phone,
-          SMS_TEMPLATES.candidateApproved(candidate.position),
-        );
-      } else if (status === "REJECTED") {
-        await sendSMS(
-          candidate.phone,
-          SMS_TEMPLATES.candidateRejected(candidate.position, rejectionNote!),
-        );
-      }
-    } catch (smsErr) {
-      console.error(
-        `[candidate-status] Status updated but SMS failed for candidate ${candidateId}:`,
-        smsErr,
+    // 3. Send notification SMS (non-blocking — uses trySendSMS which never throws)
+    let smsSent = false;
+    if (status === "APPROVED") {
+      smsSent = await trySendSMS(
+        candidate.phone,
+        SMS_TEMPLATES.candidateApproved(candidate.position),
       );
-      smsWarning = "Candidate status was updated, but SMS delivery failed.";
+    } else if (status === "REJECTED") {
+      smsSent = await trySendSMS(
+        candidate.phone,
+        SMS_TEMPLATES.candidateRejected(candidate.position, rejectionNote!),
+      );
     }
+    const smsWarning = smsSent ? null : "Candidate status was updated, but SMS delivery failed.";
 
     return success({
       message: `Candidate ${status.toLowerCase()} successfully`,

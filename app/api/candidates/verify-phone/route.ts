@@ -74,9 +74,13 @@ export async function POST(req: NextRequest) {
     }
 
     // 4. Send OTP
-    const expiresAt = await sendOTP(normalizedPhone, ipAddress);
+    const { expiresAt, smsFailed } = await sendOTP(normalizedPhone, ipAddress);
 
-    return success({ message: "OTP sent successfully", alreadySent: false, expiresAt: expiresAt.toISOString() });
+    return success({
+      message: smsFailed ? "OTP created but SMS may have failed. Request a new code if you don't receive it." : "OTP sent successfully",
+      alreadySent: false,
+      expiresAt: expiresAt.toISOString(),
+    });
   } catch (err) {
     return serverError(err);
   }

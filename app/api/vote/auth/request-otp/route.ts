@@ -48,12 +48,13 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const expiresAt = await sendOTP(normalizedPhone, ipAddress);
+    const { expiresAt, smsFailed } = await sendOTP(normalizedPhone, ipAddress);
 
     return success({
       alreadySent: false,
       expiresAt: expiresAt.toISOString(),
       cooldownSeconds: OTP_COOLDOWN_SECONDS,
+      ...(smsFailed && { smsWarning: 'OTP created but SMS delivery may have failed. Try requesting a new code if you don\'t receive it.' }),
     });
   } catch (err) {
     return serverError(err);

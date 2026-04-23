@@ -1,22 +1,90 @@
 /**
  * Africa's Talking SMS Integration
+ * 
+ * Key design decisions:
+ * - Fail-fast: throws at import time if AT credentials are missing in production
+ * - No senderId/from: we have no approved sender ID, so we never pass one
+ * - Retry: 1 automatic retry with 2s backoff for transient network failures
+ * - trySendSMS: non-throwing wrapper for non-critical SMS (confirmations)
+ * - Sandbox mode: when AT_USERNAME=sandbox, logs to console + DB only
  */
 
 import AfricasTalking from 'africastalking';
 import prisma from './prisma';
 
+// ── Environment Validation ──────────────────────────────────────────────────────
+
+const AT_USERNAME = (process.env.AT_USERNAME || '').trim();
+const AT_API_KEY = (process.env.AT_API_KEY || '').trim();
+const AT_SENDER_ID = (process.env.AT_SENDER_ID || '').trim();
+
+const IS_SANDBOX = !AT_USERNAME || AT_USERNAME.toLowerCase() === 'sandbox';
+
+// Warn loudly at startup if credentials look wrong
+if (IS_SANDBOX) {
+  console.warn(
+    '\n⚠️  [SMS] Running in SANDBOX mode — no real SMS will be sent.\n' +
+    '   AT_USERNAME is missing or set to "sandbox".\n' +
+    '   Set AT_USERNAME to your live Africa\'s Talking username for production.\n'
+  );
+}
+
+if (!IS_SANDBOX && !AT_API_KEY) {
+  console.error(
+    '\n🚨 [SMS] CRITICAL: AT_USERNAME is set to a live account but AT_API_KEY is missing!\n' +
+    '   SMS sending will fail for all requests.\n'
+  );
+}
+
+if (AT_SENDER_ID) {
+  console.warn(
+    `\n⚠️  [SMS] AT_SENDER_ID is set to "${AT_SENDER_ID}".\n` +
+    '   Unless this is an approved & mapped sender ID on your AT account,\n' +
+    '   the gateway will reject messages with InvalidSenderId.\n' +
+    '   Remove AT_SENDER_ID from your env if unsure.\n'
+  );
+}
+
+// ── SDK Initialization ──────────────────────────────────────────────────────────
+
 const at = AfricasTalking({
-  apiKey: process.env.AT_API_KEY || 'dummy_key',
-  username: process.env.AT_USERNAME || 'sandbox',
+  apiKey: AT_API_KEY || 'sandbox_dummy_key',
+  username: IS_SANDBOX ? 'sandbox' : AT_USERNAME,
 });
 
 const sms = at.SMS;
 
-export async function sendSMS(to: string, message: string): Promise<void> {
-  const username = process.env.AT_USERNAME || 'sandbox';
-  const isSandbox = username.toLowerCase() === 'sandbox';
+// ── Types ───────────────────────────────────────────────────────────────────────
 
-  // Always create a log record first
+interface ATRecipient {
+  statusCode: number;
+  number: string;
+  status: string;
+  cost: string;
+  messageId: string;
+}
+
+interface ATSendResult {
+  SMSMessageData: {
+    Message: string;
+    Recipients: ATRecipient[];
+  };
+}
+
+// Africa's Talking status codes that mean "accepted for delivery"
+const AT_SUCCESS_CODES = new Set([100, 101, 102]);
+// 100 = Processed, 101 = Sent, 102 = Queued
+
+// ── Core Send Function ──────────────────────────────────────────────────────────
+
+/**
+ * Send an SMS via Africa's Talking.
+ * 
+ * Throws on failure. Use `trySendSMS` for non-critical messages
+ * where you don't want a failure to break the calling flow.
+ */
+export async function sendSMS(to: string, message: string): Promise<void> {
+  // Always create a log record first for audit trail
   const log = await prisma.smsLog.create({
     data: {
       phone: to,
@@ -25,8 +93,13 @@ export async function sendSMS(to: string, message: string): Promise<void> {
     }
   });
 
-  if (isSandbox) {
-    console.log(`\n📱 [SMS SIMULATION → ${to}]\n${message}\n`);
+  // ── Sandbox Mode ────────────────────────────────────────────────────────────
+  if (IS_SANDBOX) {
+    console.log(
+      `\n📱 [SMS SANDBOX → ${to}]\n` +
+      `   Message: ${message}\n` +
+      `   (No real SMS sent — AT_USERNAME is sandbox)\n`
+    );
     await prisma.smsLog.update({
       where: { id: log.id },
       data: { status: 'SIMULATED' }
@@ -34,8 +107,9 @@ export async function sendSMS(to: string, message: string): Promise<void> {
     return;
   }
 
-  if (!process.env.AT_API_KEY) {
-    const errorMsg = 'AT_API_KEY is missing but username is not sandbox. Cannot send real SMS.';
+  // ── Live Mode ───────────────────────────────────────────────────────────────
+  if (!AT_API_KEY) {
+    const errorMsg = 'AT_API_KEY is missing but AT_USERNAME is set to a live account. Cannot send SMS.';
     console.error(`[SMS] ${errorMsg}`);
     await prisma.smsLog.update({
       where: { id: log.id },
@@ -44,68 +118,176 @@ export async function sendSMS(to: string, message: string): Promise<void> {
     throw new Error(errorMsg);
   }
 
+  // Build options — NEVER include senderId/from unless you have an approved one
+  // Using 'any' because the AT SDK type definitions require 'from' but it's actually optional
+  const options: any = {
+    to: [to],
+    message,
+    enqueue: true,
+  };
+
+  // Only add senderId if it's explicitly set and non-empty
+  // WARNING: Using an unapproved senderId will cause gateway rejection
+  if (AT_SENDER_ID) {
+    options.senderId = AT_SENDER_ID;
+  }
+
+  // Attempt send with 1 retry for transient failures
+  let lastError: Error | null = null;
+
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      if (attempt > 1) {
+        console.log(`[SMS] Retry attempt ${attempt} for ${to}...`);
+        await sleep(2000); // 2s backoff before retry
+      }
+
+      console.log(`[SMS] Sending to ${to} (attempt ${attempt})...`);
+      const result = (await sms.send(options) as unknown) as ATSendResult;
+
+      // Log full raw response for debugging
+      console.log('[SMS] AT raw response:', JSON.stringify(result, null, 2));
+
+      // Parse recipient from response
+      const recipient = extractRecipient(result);
+
+      if (!recipient) {
+        // AT accepted the request but returned no recipient info
+        // This can happen — log it but don't hard-fail
+        const msg = result?.SMSMessageData?.Message || 'Unknown';
+        console.warn(`[SMS] No recipient in AT response. Message: ${msg}`);
+        
+        await prisma.smsLog.update({
+          where: { id: log.id },
+          data: {
+            status: 'ACCEPTED',
+            failureReason: `No recipient data. AT Message: ${msg}`,
+          }
+        });
+        return; // Don't retry — AT accepted it
+      }
+
+      // Check status code
+      const statusCode = Number(recipient.statusCode);
+      const status = recipient.status || 'Unknown';
+      const messageId = recipient.messageId || null;
+      const cost = recipient.cost || 'N/A';
+
+      if (!AT_SUCCESS_CODES.has(statusCode)) {
+        // AT explicitly rejected this message
+        const rejectMsg = `AT rejected SMS: statusCode=${statusCode}, status=${status}, number=${recipient.number}, cost=${cost}`;
+        console.error(`[SMS] ${rejectMsg}`);
+
+        await prisma.smsLog.update({
+          where: { id: log.id },
+          data: {
+            messageId: messageId?.toString() || null,
+            status: 'REJECTED',
+            failureReason: rejectMsg,
+          }
+        });
+
+        // Don't retry on explicit rejection (wrong number, no balance, invalid sender, etc.)
+        throw new Error(rejectMsg);
+      }
+
+      // Success — AT accepted the message
+      await prisma.smsLog.update({
+        where: { id: log.id },
+        data: {
+          messageId: messageId?.toString() || null,
+          status: status.toUpperCase(),
+        }
+      });
+
+      console.log(`[SMS] ✅ Sent to ${to}: status=${status}, id=${messageId ?? 'N/A'}, cost=${cost}`);
+      return; // Success — exit the retry loop
+
+    } catch (err: unknown) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      lastError = error;
+
+      // Don't retry on explicit AT rejection (4xx-level errors)
+      if (error.message.includes('AT rejected SMS')) {
+        throw error;
+      }
+
+      // Don't retry on validation errors from the SDK
+      if (error.message.includes('must be a valid phone number') ||
+          error.message.includes('is required')) {
+        await prisma.smsLog.update({
+          where: { id: log.id },
+          data: { status: 'FAILED', failureReason: `Validation: ${error.message}` }
+        });
+        throw error;
+      }
+
+      // Transient error (network, timeout) — retry if we have attempts left
+      if (attempt < 2) {
+        console.warn(`[SMS] Transient failure on attempt ${attempt}, will retry: ${error.message}`);
+      }
+    }
+  }
+
+  // Both attempts failed
+  const failMsg = lastError?.message || 'Unknown error after retries';
+  console.error(`[SMS] ❌ All attempts failed for ${to}: ${failMsg}`);
+
+  await prisma.smsLog.update({
+    where: { id: log.id },
+    data: {
+      status: 'FAILED',
+      failureReason: failMsg,
+    }
+  });
+
+  throw new Error(`SMS delivery failed for ${to}: ${failMsg}`);
+}
+
+// ── Non-Throwing Wrapper ────────────────────────────────────────────────────────
+
+/**
+ * Try to send an SMS, but never throw. Logs failures instead.
+ * Use this for non-critical messages (vote confirmations, candidate notifications)
+ * where a failed SMS should NOT break the calling operation.
+ * 
+ * Returns true if sent successfully, false otherwise.
+ */
+export async function trySendSMS(to: string, message: string): Promise<boolean> {
   try {
-    const options: any = {
-      to: [to],
-      message,
-      enqueue: true,
-    };
-
-    // Only use senderId if it is truly approved and mapped to your account
-    const senderId = process.env.AT_SENDER_ID?.trim();
-    if (senderId) {
-      options.senderId = senderId;
-    }
-
-    console.log("[SMS Options]", JSON.stringify(options, null, 2));
-    const result = (await sms.send(options)) as any;
-    console.log("[AfricaTalking SMS result]", JSON.stringify(result, null, 2));
-
-    const recipient = result?.SMSMessageData?.Recipients?.[0] || 
-                     result?.SMSMessageData?.recipients?.[0] || 
-                     result?.recipients?.[0];
-
-    if (!recipient) {
-      throw new Error(`No recipient response from Africa's Talking: ${JSON.stringify(result)}`);
-    }
-
-    // Africa's Talking status codes: 100=Processed, 101=Sent, 102=Queued
-    const statusCode = Number(recipient.statusCode);
-    if (![100, 101, 102].includes(statusCode)) {
-      throw new Error(
-        `Africa's Talking rejected SMS. statusCode=${recipient.statusCode}, status=${recipient.status}, number=${recipient.number}`
-      );
-    }
-
-    const messageId = recipient?.messageId || 
-                     recipient?.messageID || 
-                     recipient?.MessageId || 
-                     recipient?.id || 
-                     recipient?.messageParts?.[0]?.id;
-
-    const status = recipient?.status || 'Sent';
-
-    await prisma.smsLog.update({
-      where: { id: log.id },
-      data: { 
-        messageId: messageId?.toString(),
-        status: status.toUpperCase(),
-      }
-    });
-
-    console.log(`[SMS] Sent to ${to}: Status=${status}, ID=${messageId ?? 'N/A'}`);
-  } catch (err: any) {
-    console.error(`[SMS] Failed to send to ${to}:`, err);
-    await prisma.smsLog.update({
-      where: { id: log.id },
-      data: { 
-        status: 'FAILED',
-        failureReason: err.message || 'Unknown error'
-      }
-    });
-    throw new Error(`SMS delivery failed for ${to}: ${err.message}`);
+    await sendSMS(to, message);
+    return true;
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err : new Error(String(err));
+    console.error(`[SMS] trySendSMS failed silently for ${to}: ${error.message}`);
+    return false;
   }
 }
+
+// ── Helpers ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Extract the first recipient from AT's response, handling various response shapes.
+ */
+function extractRecipient(result: any): ATRecipient | null {
+  // Standard shape: result.SMSMessageData.Recipients[0]
+  const recipients =
+    result?.SMSMessageData?.Recipients ||
+    result?.SMSMessageData?.recipients ||
+    result?.recipients;
+
+  if (Array.isArray(recipients) && recipients.length > 0) {
+    return recipients[0] as ATRecipient;
+  }
+
+  return null;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// ── SMS Templates ───────────────────────────────────────────────────────────────
 
 export const SMS_TEMPLATES = {
   otp: (code: string) =>

@@ -68,15 +68,17 @@ export async function checkOTPRateLimit(phone: string, ipAddress?: string): Prom
   return state.allowed;
 }
 
-export async function sendOTP(phone: string, ipAddress?: string): Promise<Date> {
+export async function sendOTP(phone: string, ipAddress?: string): Promise<{ expiresAt: Date; smsFailed: boolean }> {
   const code = generateCode();
   const expiresAt = new Date(Date.now() + OTP_TTL_MS);
 
+  // Invalidate all previous unverified OTPs for this phone
   await prisma.otpRequest.updateMany({
     where: { phone, verified: false },
     data: { expiresAt: new Date(0) },
   });
 
+  // Create the new OTP record
   await prisma.otpRequest.create({
     data: { phone, code, expiresAt, verified: false, ipAddress },
   });
@@ -85,8 +87,21 @@ export async function sendOTP(phone: string, ipAddress?: string): Promise<Date> 
     console.log(`\n🔑 [TESTING] OTP for ${phone}: ${code}\n`);
   }
 
-  await sendSMS(phone, SMS_TEMPLATES.otp(code));
-  return expiresAt;
+  // Send SMS — but don't let a delivery failure crash the OTP flow.
+  // The OTP is already saved in the DB. If SMS fails, the user can
+  // request a resend, and the voter experience is not hard-blocked.
+  let smsFailed = false;
+  try {
+    await sendSMS(phone, SMS_TEMPLATES.otp(code));
+  } catch (smsErr) {
+    smsFailed = true;
+    console.error(
+      `[OTP] OTP created for ${phone} but SMS delivery failed:`,
+      smsErr instanceof Error ? smsErr.message : smsErr
+    );
+  }
+
+  return { expiresAt, smsFailed };
 }
 
 export type VerifyResult =
