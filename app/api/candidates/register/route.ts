@@ -42,6 +42,14 @@ export async function POST(req: NextRequest) {
       return error('The submitted phone number does not match the verified phone number.', 403);
     }
 
+    // Verify position exists
+    const positionRef = await prisma.position.findUnique({
+      where: { title: position }
+    });
+    if (!positionRef) {
+      return error(`The position "${position}" is not a valid elective position.`, 400);
+    }
+
     // 3. Validation checks against DB
     const [existingScholarCode, existingCandidate] = await Promise.all([
       prisma.candidate.findUnique({ where: { scholarCode } }),

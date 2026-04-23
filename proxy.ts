@@ -13,6 +13,8 @@ const adminProtectedRoutes = [
   "/admin/candidates",
   "/admin/results",
   "/admin/config",
+  "/admin/logs",
+  "/admin/vote-attempts",
 ];
 
 const voterProtectedRoutes = ["/vote"];

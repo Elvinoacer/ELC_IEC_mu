@@ -1,11 +1,15 @@
 import { NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { success, serverError } from '@/lib/response';
+import { requireAdminSession } from '@/lib/admin-auth';
 
 export const revalidate = 0;
 
 export async function GET(req: NextRequest) {
   try {
+    const auth = await requireAdminSession(req);
+    if ('response' in auth) return auth.response;
+
     const [
       totalVoters,
       totalVoted,

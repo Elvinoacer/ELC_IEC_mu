@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { success, error, serverError } from "@/lib/response";
 import { normalizePhone, isValidKenyanPhone } from "@/lib/phone";
 import { requireAdminSession } from "@/lib/admin-auth";
+import { logAudit } from "@/lib/audit";
 
 // Schema for adding a single voter
 const addVoterSchema = z.object({
@@ -95,6 +96,15 @@ export async function POST(req: NextRequest) {
         addedById: auth.admin.id,
       },
     });
+
+    await logAudit(
+      req,
+      auth.admin.id,
+      "ADD_VOTER",
+      "Voter",
+      voter.id,
+      { phone: voter.phone, name: voter.name }
+    );
 
     return success({ message: "Voter added successfully", voter }, 201);
   } catch (err) {

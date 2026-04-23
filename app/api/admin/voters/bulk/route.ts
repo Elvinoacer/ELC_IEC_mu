@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { success, error, serverError } from "@/lib/response";
 import { normalizePhone, isValidKenyanPhone } from "@/lib/phone";
 import { requireAdminSession } from "@/lib/admin-auth";
+import { logAudit } from "@/lib/audit";
 
 const bulkVoterSchema = z.array(
   z.object({
@@ -95,6 +96,20 @@ export async function POST(req: NextRequest) {
       });
       validCount = finalVotersToInsert.length;
     }
+
+    await logAudit(
+      req,
+      adminId,
+      "BULK_IMPORT_VOTERS",
+      "Voter",
+      undefined,
+      { 
+        added: validCount, 
+        duplicates: duplicateCount, 
+        invalid: invalidCount,
+        total: rows.length 
+      }
+    );
 
     return success({
       message: "Bulk import completed",

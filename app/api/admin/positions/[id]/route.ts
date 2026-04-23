@@ -2,6 +2,8 @@ import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { success, error, serverError } from '@/lib/response';
+import { requireAdminSession } from '@/lib/admin-auth';
+import { logAudit } from '@/lib/audit';
 
 const updateSchema = z.object({
   title: z.string().min(2).optional(),
@@ -13,6 +15,9 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireAdminSession(req);
+    if ('response' in auth) return auth.response;
+
     const { id } = await params;
     const positionId = parseInt(id, 10);
     if (isNaN(positionId)) return error('Invalid position ID', 400);
@@ -38,6 +43,15 @@ export async function PUT(
       data: result.data
     });
 
+    await logAudit(
+      req,
+      auth.admin.id,
+      'UPDATE_POSITION',
+      'Position',
+      positionId,
+      { old: position, new: updated }
+    );
+
     return success({ message: 'Position updated', position: updated });
   } catch (err) {
     return serverError(err);
@@ -49,6 +63,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireAdminSession(req);
+    if ('response' in auth) return auth.response;
+
     const { id } = await params;
     const positionId = parseInt(id, 10);
     if (isNaN(positionId)) return error('Invalid position ID', 400);
@@ -72,6 +89,15 @@ export async function DELETE(
     }
 
     await prisma.position.delete({ where: { id: positionId } });
+
+    await logAudit(
+      req,
+      auth.admin.id,
+      'DELETE_POSITION',
+      'Position',
+      positionId,
+      { title: position.title }
+    );
 
     return success({ message: 'Position deleted successfully' });
   } catch (err) {

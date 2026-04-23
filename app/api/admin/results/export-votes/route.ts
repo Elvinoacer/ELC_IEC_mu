@@ -1,11 +1,16 @@
 import { NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { serverError } from '@/lib/response';
+import { requireAdminSession } from '@/lib/admin-auth';
+import { logAudit } from '@/lib/audit';
 
 export const revalidate = 0;
 
 export async function GET(req: NextRequest) {
   try {
+    const auth = await requireAdminSession(req);
+    if ('response' in auth) return auth.response;
+
     const votes = await prisma.vote.findMany({
       include: {
         voter: true,
@@ -19,8 +24,14 @@ export async function GET(req: NextRequest) {
 
     // Add rows
     votes.forEach((v) => {
+      // Mask phone number for privacy: +2547****1234
+      const phone = v.voter.phone;
+      const maskedPhone = phone.length > 8 
+        ? `${phone.substring(0, 5)}****${phone.substring(phone.length - 4)}`
+        : '****';
+
       const row = [
-        v.voter.phone,
+        maskedPhone,
         `"${v.position}"`,
         `"${v.candidate.name}"`,
         `"${v.candidate.scholarCode}"`,
@@ -28,6 +39,15 @@ export async function GET(req: NextRequest) {
       ];
       csv += row.join(',') + '\n';
     });
+
+    await logAudit(
+      req,
+      auth.admin.id,
+      'EXPORT_VOTES',
+      'Vote',
+      undefined,
+      { count: votes.length }
+    );
 
     const filename = `elp_votes_export_${new Date().toISOString().split('T')[0]}.csv`;
 

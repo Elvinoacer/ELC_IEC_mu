@@ -3,6 +3,7 @@ import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { success, error, serverError } from '@/lib/response';
 import { requireAdminSession } from '@/lib/admin-auth';
+import { logAudit } from '@/lib/audit';
 
 const updateSchema = z.object({
   name: z.string().min(2).max(100),
@@ -49,6 +50,15 @@ export async function PATCH(
       where: { id: candidateId },
       data: result.data,
     });
+
+    await logAudit(
+      req,
+      auth.admin.id,
+      "EDIT_CANDIDATE",
+      "Candidate",
+      candidateId,
+      { old: candidate, new: updated }
+    );
 
     return success(updated);
   } catch (err) {

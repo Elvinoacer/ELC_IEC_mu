@@ -87,6 +87,16 @@ export async function PATCH(
     } 
     
     if (action === 'reset') {
+      const { reason } = body;
+      if (!reason || reason.length < 5) {
+        return error("A valid reason (min 5 chars) is required for resetting a voter.", 400);
+      }
+
+      // Role restriction: Only SUPER_ADMIN can reset a voter
+      if (auth.admin.role !== 'SUPER_ADMIN') {
+        return error("Unauthorized. Only a SUPER_ADMIN can reset voter status.", 403);
+      }
+
       // Used for genuine errors only
       await prisma.voter.update({
         where: { id: voterId },
@@ -107,7 +117,7 @@ export async function PATCH(
         "RESET_VOTER",
         "Voter",
         voterId,
-        { phone: voter.phone }
+        { phone: voter.phone, reason }
       );
 
       return success({ message: "Voter has been reset successfully" });

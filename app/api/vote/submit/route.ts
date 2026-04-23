@@ -41,12 +41,30 @@ export async function POST(req: NextRequest) {
     // 2. Transaction: Lock voter, verify not voted, cast votes, update stats
     await prisma.$transaction(async (tx) => {
       // Row-level lock on voter to prevent race conditions (double vote)
-      const voter = await tx.$queryRaw<{ id: number; has_voted: boolean }[]>`
-        SELECT id, has_voted FROM voters WHERE id = ${voterId} FOR UPDATE
+      // Using queryRaw to ensure we get the latest state with FOR UPDATE
+      const voterData = await tx.$queryRaw<{ id: number; has_voted: boolean; device_hash: string | null }[]>`
+        SELECT id, has_voted, device_hash FROM voters WHERE id = ${voterId} FOR UPDATE
       `;
 
-      if (!voter.length || voter[0].has_voted) {
+      if (!voterData.length || voterData[0].has_voted) {
         throw new Error('ALREADY_VOTED');
+      }
+
+      const dbVoter = voterData[0];
+
+      // Window Check re-validation inside transaction
+      const config = await tx.votingConfig.findUnique({ where: { id: 1 } });
+      if (config) {
+        const now = new Date();
+        if (config.isManuallyClosed) throw new Error('VOTING_CLOSED_MANUALLY');
+        if (now < config.opensAt) throw new Error('VOTING_NOT_STARTED');
+        if (now > config.closesAt) throw new Error('VOTING_ALREADY_CLOSED');
+      }
+
+      // Device Integrity Check
+      // If the voter already had a device hash stored (from login), it MUST match what they are submitting now.
+      if (dbVoter.device_hash && dbVoter.device_hash !== deviceHash) {
+        throw new Error('DEVICE_MISMATCH');
       }
 
       // Verify each candidate is approved and matches the position
@@ -95,7 +113,9 @@ export async function POST(req: NextRequest) {
     // 4. Trigger Real-time Broadcast
     try {
       const resultsPayload = await generateResultsPayload();
-      await fetch('http://localhost:3001/internal/broadcast-results', {
+      const broadcastUrl = process.env.INTERNAL_BROADCAST_URL || 'http://localhost:3001/internal/broadcast-results';
+      
+      await fetch(broadcastUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(resultsPayload),
@@ -109,7 +129,10 @@ export async function POST(req: NextRequest) {
     return res;
 
   } catch (err: any) {
-    const status = err.message === 'ALREADY_VOTED' ? 'DUPLICATE' : 'FAILED';
+    let status: 'SUCCESS' | 'FAILED' | 'DUPLICATE' | 'OUTSIDE_WINDOW' = 'FAILED';
+    if (err.message === 'ALREADY_VOTED') status = 'DUPLICATE';
+    if (err.message?.startsWith('VOTING_')) status = 'OUTSIDE_WINDOW';
+
     await logVoteAttempt(req, status, { 
       voterId: voterId, 
       phone: phone, 
@@ -120,9 +143,17 @@ export async function POST(req: NextRequest) {
     if (err.message === 'ALREADY_VOTED') {
       return error('You have already cast your vote.', 409);
     }
+    if (err.message === 'DEVICE_MISMATCH') {
+      return error('Device mismatch detected. Your session may have been compromised.', 403);
+    }
+    if (err.message === 'VOTING_CLOSED_MANUALLY') return error('Voting has been manually closed by the IEC.', 403);
+    if (err.message === 'VOTING_NOT_STARTED') return error('Voting has not started yet.', 403);
+    if (err.message === 'VOTING_ALREADY_CLOSED') return error('Voting has already closed.', 403);
+
     if (err.message?.startsWith('INVALID_CANDIDATE') || err.message?.startsWith('CANDIDATE_NOT_APPROVED') || err.message?.startsWith('POSITION_MISMATCH')) {
       return error('Invalid candidate selection detected. Please refresh and try again.', 400);
     }
+    
     // Prisma unique constraint violation (P2002) for votes means they already voted for this position
     if (err.code === 'P2002') {
       return error('Duplicate vote detected.', 409);
