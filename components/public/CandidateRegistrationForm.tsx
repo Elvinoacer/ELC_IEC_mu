@@ -20,6 +20,7 @@ export default function CandidateRegistrationForm({ positions }: Props) {
   const [step, setStep] = useState<Step>('PHONE');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
 
   // Phone Step
   const [phone, setPhone] = useState('');
@@ -57,6 +58,7 @@ export default function CandidateRegistrationForm({ positions }: Props) {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setInfo(null);
     try {
       const res = await fetch('/api/candidates/verify-phone', {
         method: 'POST',
@@ -65,6 +67,9 @@ export default function CandidateRegistrationForm({ positions }: Props) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to send verification code');
+      if (data.data?.alreadySent) {
+        setInfo('A valid OTP is already active for this phone. Please use the previously sent code.');
+      }
       setStep('OTP');
     } catch (err: any) {
       setError(err.message);
@@ -178,6 +183,12 @@ export default function CandidateRegistrationForm({ positions }: Props) {
         </div>
       )}
 
+      {info && (
+        <div className="mb-6 rounded-xl border border-brand-500/20 bg-brand-500/10 p-4 text-sm text-brand-200">
+          {info}
+        </div>
+      )}
+
       {/* STEP 1: PHONE */}
       {step === 'PHONE' && (
         <form onSubmit={handleSendPhone} className="space-y-6 fade-in">
@@ -206,7 +217,7 @@ export default function CandidateRegistrationForm({ positions }: Props) {
           <div>
             <h2 className="text-xl font-bold text-white mb-2">Enter Verification Code</h2>
             <p className="text-sm text-slate-400">
-              We've sent a 6-digit code to <span className="font-medium text-white">{phone}</span>.
+              We have sent a 6-digit code to <span className="font-medium text-white">{phone}</span>.
             </p>
           </div>
           <Input

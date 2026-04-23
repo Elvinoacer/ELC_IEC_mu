@@ -12,7 +12,7 @@ export default function PublicShell({ children }: { children: React.ReactNode })
       </div>
 
       {/* Header */}
-      <header className="relative z-10 border-b border-glass-border">
+      <header className="relative z-10 border-b border-glass-border bg-surface-900/40 backdrop-blur-xl">
         <div className="max-w-5xl mx-auto px-[var(--spacing-page)] py-4 flex items-center justify-between">
           <ELPLogo />
           <nav className="hidden sm:flex items-center gap-6">
@@ -32,7 +32,7 @@ export default function PublicShell({ children }: { children: React.ReactNode })
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 border-t border-glass-border">
+      <footer className="relative z-10 border-t border-glass-border bg-surface-900/40 backdrop-blur-xl">
         <div className="max-w-5xl mx-auto px-[var(--spacing-page)] py-4 flex items-center justify-between">
           <p className="text-xs text-slate-600">
             © {new Date().getFullYear()} ELP Moi Chapter IEC

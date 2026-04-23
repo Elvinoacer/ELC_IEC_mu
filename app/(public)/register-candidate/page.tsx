@@ -14,7 +14,8 @@ export default async function RegisterCandidatePage() {
   return (
     <PublicShell>
       <div className="max-w-3xl mx-auto py-12 px-4 sm:px-6">
-        <div className="text-center mb-10">
+        <div className="mb-10 rounded-2xl border border-white/10 bg-gradient-to-r from-surface-800/80 to-surface-900/70 p-6 text-center shadow-xl">
+          <p className="text-xs uppercase tracking-[0.22em] text-accent-300/70">Candidate Portal</p>
           <h1 className="text-3xl md:text-4xl font-bold text-white mb-4 font-[family-name:var(--font-outfit)]">
             Candidate Registration
           </h1>

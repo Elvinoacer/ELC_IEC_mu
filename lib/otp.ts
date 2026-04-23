@@ -17,13 +17,11 @@ function generateCode(digits = OTP_DIGITS): string {
 
 export async function findRecentReusableOTP(phone: string) {
   const now = new Date();
-  const sixtySecondsAgo = new Date(now.getTime() - OTP_COOLDOWN_SECONDS * 1000);
 
   return prisma.otpRequest.findFirst({
     where: {
       phone,
       verified: false,
-      sentAt: { gte: sixtySecondsAgo },
       expiresAt: { gt: now },
       attempts: { lt: OTP_MAX_ATTEMPTS },
     },
