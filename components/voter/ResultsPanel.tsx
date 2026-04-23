@@ -49,14 +49,14 @@ export default function ResultsPanel({ initialData, compact = false }: { initial
   const positions = useMemo(() => data?.positions ?? [], [data]);
 
   return (
-    <Card padding="lg" className="h-full border-white/15 bg-gradient-to-br from-surface-800/80 via-surface-900/75 to-surface-900/70 backdrop-blur-xl shadow-[0_24px_60px_rgba(2,6,23,0.55)]">
-      <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-lg font-bold text-white">Live Results</h3>
+    <Card padding="lg" className="h-full border-white/15 bg-gradient-to-br from-surface-800/80 via-surface-900/75 to-surface-900/70 backdrop-blur-xl shadow-[0_24px_60px_rgba(2,6,23,0.55)] p-3 sm:p-6">
+      <div className="mb-3 sm:mb-4 flex items-center justify-between gap-2">
+        <h3 className="text-sm sm:text-lg font-bold text-white">Live Results</h3>
         <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs ${connected ? 'bg-success-500/10 text-success-300' : 'bg-slate-500/10 text-slate-400'}`}>{connected ? '🟢 Live' : '⚪ Offline'}</span>
       </div>
 
       {data && (
-        <div className="mb-4 text-sm text-slate-300">
+        <div className="mb-3 sm:mb-4 text-xs sm:text-sm text-slate-300">
           Turnout <span className="font-semibold text-white">{data.turnout.percentage}%</span> ({data.turnout.voted}/{data.turnout.total})
         </div>
       )}
@@ -74,7 +74,7 @@ export default function ResultsPanel({ initialData, compact = false }: { initial
                 </span>
               </div>
               
-              <div className="space-y-4">
+              <div className={`${compact ? 'grid grid-cols-1 min-[430px]:grid-cols-2 gap-2 sm:gap-3' : 'space-y-4'}`}>
                 {candidates.map((c, idx) => (
                   <div key={c.id} className="relative">
                     <div className="flex items-center gap-3 mb-2">
@@ -84,7 +84,7 @@ export default function ResultsPanel({ initialData, compact = false }: { initial
                         <img 
                           src={c.photoUrl || '/placeholder-avatar.png'} 
                           alt={c.name}
-                          className={`relative w-10 h-10 rounded-full object-cover border-2 ${idx === 0 ? 'border-brand-500/50' : 'border-white/10'}`}
+                          className={`relative w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover border-2 ${idx === 0 ? 'border-brand-500/50' : 'border-white/10'}`}
                         />
                         {idx === 0 && (
                           <div className="absolute -top-1 -right-1 w-4 h-4 bg-brand-600 rounded-full flex items-center justify-center border border-surface-900 shadow-lg">
@@ -97,7 +97,7 @@ export default function ResultsPanel({ initialData, compact = false }: { initial
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-end mb-1.5">
                           <div>
-                            <p className={`text-sm font-bold truncate ${idx === 0 ? 'text-white' : 'text-slate-200'}`}>
+                            <p className={`text-xs sm:text-sm font-bold truncate ${idx === 0 ? 'text-white' : 'text-slate-200'}`}>
                               {c.name}
                             </p>
                             <p className="text-[10px] text-slate-500 font-medium">

@@ -92,6 +92,16 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  @media (max-width: 640px) {
+    html {
+      font-size: 14px;
+    }
+
+    :root {
+      --spacing-page: 0.75rem;
+    }
+  }
+
   body {
     font-family: var(--font-sans);
     background: var(--color-surface-900);
@@ -242,6 +252,13 @@
     0% { transform: translateY(0px); }
     50% { transform: translateY(-20px); }
     100% { transform: translateY(0px); }
+  }
+
+  @media (max-width: 640px) {
+    .glass-card {
+      border-radius: 0.9rem;
+      box-shadow: 0 8px 26px rgba(0, 0, 0, 0.3);
+    }
   }
 }
 

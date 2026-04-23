@@ -28,8 +28,8 @@ export default function VoterShell({ children, step = 'phone' }: VoterShellProps
 
       {/* Header with progress */}
       <header className="relative z-10 border-b border-glass-border">
-        <div className="max-w-3xl mx-auto px-[var(--spacing-page)] py-4">
-          <div className="flex items-center justify-between mb-4">
+        <div className="max-w-3xl mx-auto px-[var(--spacing-page)] py-3 sm:py-4">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
             <ELPLogo />
           </div>
 
@@ -58,8 +58,8 @@ export default function VoterShell({ children, step = 'phone' }: VoterShellProps
                       i + 1
                     )}
                   </div>
-                  <span
-                    className={`text-xs font-medium hidden sm:block ${
+                    <span
+                    className={`text-[10px] sm:text-xs font-medium hidden sm:block ${
                       i <= currentIndex ? 'text-slate-300' : 'text-slate-600'
                     }`}
                   >
@@ -80,7 +80,7 @@ export default function VoterShell({ children, step = 'phone' }: VoterShellProps
       </header>
 
       {/* Content */}
-      <main className="relative z-10 flex-1 flex flex-col items-center py-12 px-[var(--spacing-page)]">
+      <main className="relative z-10 flex-1 flex flex-col items-center py-6 sm:py-12 px-[var(--spacing-page)]">
         <div className="w-full max-w-5xl">
           {children}
         </div>

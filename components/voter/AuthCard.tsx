@@ -135,12 +135,12 @@ export default function AuthCard({ onAlreadyVoted }: { onAlreadyVoted?: () => vo
   };
 
   return (
-    <Card padding="xl" className="relative overflow-hidden border-white/20 bg-gradient-to-b from-surface-800/90 via-surface-900/85 to-surface-900/70 backdrop-blur-xl shadow-[0_30px_80px_rgba(15,23,42,0.6)]">
+    <Card padding="xl" className="relative overflow-hidden border-white/20 bg-gradient-to-b from-surface-800/90 via-surface-900/85 to-surface-900/70 backdrop-blur-xl shadow-[0_30px_80px_rgba(15,23,42,0.6)] p-4 sm:p-8">
       <div className="pointer-events-none absolute -right-20 -top-20 h-48 w-48 rounded-full bg-accent-500/10 blur-3xl" />
       <div className="pointer-events-none absolute -left-20 bottom-0 h-48 w-48 rounded-full bg-brand-500/20 blur-3xl" />
       <p className="mb-2 text-xs font-semibold uppercase tracking-[0.25em] text-accent-300/80">Secure Voter Access</p>
-      <h1 className="mb-2 text-3xl font-bold text-white">ELP Moi Chapter Elections</h1>
-      <p className="mb-6 text-sm text-slate-300">A trusted and elegant voting experience.</p>
+      <h1 className="mb-2 text-xl sm:text-2xl md:text-3xl font-bold text-white">ELP Moi Chapter Elections</h1>
+      <p className="mb-4 sm:mb-6 text-xs sm:text-sm text-slate-300">A trusted and elegant voting experience.</p>
 
       {deviceCheckLoading && <p className="mb-4 text-xs text-slate-400">Preparing secure device session...</p>}
 
@@ -150,7 +150,7 @@ export default function AuthCard({ onAlreadyVoted }: { onAlreadyVoted?: () => vo
       {step === 'PHONE' ? (
         <div className="space-y-4">
           <PhoneInput value={localPhone} onChange={setLocalPhone} disabled={loading} autoFocus />
-          <Button className="w-full min-h-12" onClick={sendOtp} loading={loading} disabled={deviceCheckLoading}>Get My Secure Code</Button>
+          <Button className="w-full min-h-10 sm:min-h-12" onClick={sendOtp} loading={loading} disabled={deviceCheckLoading}>Get My Secure Code</Button>
         </div>
       ) : (
         <div className="space-y-4">
@@ -165,14 +165,14 @@ export default function AuthCard({ onAlreadyVoted }: { onAlreadyVoted?: () => vo
               {attemptsLeft !== null ? ` · ${attemptsLeft} attempts left` : ''}
             </p>
           )}
-          <div className="flex gap-3">
-            <Button className="flex-1 min-h-12" loading={loading} onClick={() => verifyOtp(otpCode)} disabled={otpCode.length !== 6 || !fingerprint}>Verify Code</Button>
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
+            <Button className="flex-1 min-h-10 sm:min-h-12" loading={loading} onClick={() => verifyOtp(otpCode)} disabled={otpCode.length !== 6 || !fingerprint}>Verify Code</Button>
             <Button
               variant="outline"
               type="button"
               onClick={sendOtp}
               disabled={loading || cooldownSeconds > 0}
-              className="min-h-12"
+              className="min-h-10 sm:min-h-12"
             >
               {cooldownSeconds > 0 ? `Resend ${cooldownSeconds}s` : 'Resend'}
             </Button>
