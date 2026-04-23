@@ -23,14 +23,11 @@ export async function GET(req: NextRequest) {
       prisma.voteAttempt.count(),
     ]);
 
-    return success({
-      data: attempts,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
+    return success(attempts, 200, {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
     });
   } catch (err) {
     return serverError(err);

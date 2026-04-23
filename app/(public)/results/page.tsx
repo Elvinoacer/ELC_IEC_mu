@@ -3,7 +3,7 @@
 import React, { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import PublicShell from '@/components/layouts/PublicShell';
-import ResultsPanel from '@/components/voter/ResultsPanel';
+import DetailedResults from '@/components/voter/DetailedResults';
 import type { ResultsPayload } from '@/lib/results';
 
 function ResultsView() {
@@ -19,22 +19,17 @@ function ResultsView() {
   }, []);
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
-      <div className="mb-6 rounded-2xl border border-white/10 bg-gradient-to-r from-surface-800/80 to-surface-900/70 p-5 shadow-xl">
-        <p className="text-xs uppercase tracking-[0.22em] text-accent-300/70">Live Election Analytics</p>
-        <h1 className="mt-2 text-2xl font-bold text-white md:text-3xl">Real-Time Results Dashboard</h1>
-      </div>
-
-      {searchParams.get('voted') === 'true' && (
-        <div className="mb-6 rounded-xl border border-brand-500/20 bg-brand-500/10 p-4 text-sm text-brand-200">
-          You have already cast your vote. Thank you for participating.
-        </div>
-      )}
-
+    <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6">
       {loading ? (
-        <p className="text-slate-400">Loading results...</p>
+        <div className="flex flex-col items-center justify-center min-h-[40vh] gap-4">
+          <div className="w-12 h-12 border-4 border-brand-500/20 border-t-brand-500 rounded-full animate-spin" />
+          <p className="text-slate-400 font-medium">Synchronizing Live Results...</p>
+        </div>
       ) : (
-        <ResultsPanel initialData={data} compact={false} />
+        <DetailedResults 
+          initialData={data} 
+          hasAlreadyVoted={searchParams.get('voted') === 'true'} 
+        />
       )}
     </div>
   );

@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    return success({ data: candidates });
+    return success(candidates);
   } catch (err) {
     return serverError(err);
   }

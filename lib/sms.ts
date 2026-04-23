@@ -6,13 +6,16 @@ import AfricasTalking from 'africastalking';
 import prisma from './prisma';
 
 const at = AfricasTalking({
-  apiKey: process.env.AT_API_KEY || '',
+  apiKey: process.env.AT_API_KEY || 'dummy_key',
   username: process.env.AT_USERNAME || 'sandbox',
 });
 
 const sms = at.SMS;
 
 export async function sendSMS(to: string, message: string): Promise<void> {
+  const username = process.env.AT_USERNAME || 'sandbox';
+  const isSandbox = username.toLowerCase() === 'sandbox';
+
   // Always create a log record first
   const log = await prisma.smsLog.create({
     data: {
@@ -22,8 +25,8 @@ export async function sendSMS(to: string, message: string): Promise<void> {
     }
   });
 
-  if (process.env.NODE_ENV === 'development' && process.env.AT_USERNAME === 'sandbox') {
-    console.log(`\n📱 [SMS → ${to}]\n${message}\n`);
+  if (isSandbox) {
+    console.log(`\n📱 [SMS SIMULATION → ${to}]\n${message}\n`);
     await prisma.smsLog.update({
       where: { id: log.id },
       data: { status: 'SIMULATED' }
@@ -31,16 +34,27 @@ export async function sendSMS(to: string, message: string): Promise<void> {
     return;
   }
 
+  if (!process.env.AT_API_KEY) {
+    const errorMsg = 'AT_API_KEY is missing but username is not sandbox. Cannot send real SMS.';
+    console.error(`[SMS] ${errorMsg}`);
+    await prisma.smsLog.update({
+      where: { id: log.id },
+      data: { status: 'FAILED', failureReason: errorMsg }
+    });
+    throw new Error(errorMsg);
+  }
+
   try {
     const result = (await sms.send({
       to: [to],
       message,
-      from: process.env.AT_SENDER_ID!,
+      from: process.env.AT_SENDER_ID || undefined,
     })) as any;
 
     // Extract messageId from the result (usually it's in SMSMessageData.Recipients[0].messageId)
-    const messageId = result?.SMSMessageData?.Recipients?.[0]?.messageId;
-    const status = result?.SMSMessageData?.Recipients?.[0]?.status || 'Sent';
+    const recipient = result?.SMSMessageData?.Recipients?.[0];
+    const messageId = recipient?.messageId;
+    const status = recipient?.status || 'Sent';
 
     await prisma.smsLog.update({
       where: { id: log.id },
@@ -50,7 +64,7 @@ export async function sendSMS(to: string, message: string): Promise<void> {
       }
     });
 
-    console.log(`[SMS] Sent to ${to}: ${JSON.stringify(result)}`);
+    console.log(`[SMS] Sent to ${to}: Status=${status}, ID=${messageId}`);
   } catch (err: any) {
     console.error(`[SMS] Failed to send to ${to}:`, err);
     await prisma.smsLog.update({
@@ -60,7 +74,7 @@ export async function sendSMS(to: string, message: string): Promise<void> {
         failureReason: err.message || 'Unknown error'
       }
     });
-    throw new Error(`SMS delivery failed for ${to}`);
+    throw new Error(`SMS delivery failed for ${to}: ${err.message}`);
   }
 }
 

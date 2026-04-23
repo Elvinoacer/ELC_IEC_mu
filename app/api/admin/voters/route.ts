@@ -43,14 +43,11 @@ export async function GET(req: NextRequest) {
       prisma.voter.count({ where }),
     ]);
 
-    return success({
-      data: voters,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
+    return success(voters, 200, {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
     });
   } catch (err) {
     return serverError(err);

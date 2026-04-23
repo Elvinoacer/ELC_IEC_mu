@@ -7,29 +7,30 @@
 
 @theme {
   /* ── Brand Colors ─────────────────────────────────────────────────────── */
-  --color-brand-50: #eff6ff;
-  --color-brand-100: #dbeafe;
-  --color-brand-200: #bfdbfe;
-  --color-brand-300: #93c5fd;
-  --color-brand-400: #60a5fa;
-  --color-brand-500: #3b82f6;
-  --color-brand-600: #2563eb;
-  --color-brand-700: #1d4ed8;
-  --color-brand-800: #1e40af;
-  --color-brand-900: #1e3a8a;
-  --color-brand-950: #0f1d4a;
+  /* ── Brand Colors (Equity Maroon/Red) ────────────────────────────────── */
+  --color-brand-50: #fceeee;
+  --color-brand-100: #f7dddd;
+  --color-brand-200: #efbcbb;
+  --color-brand-300: #e18d8c;
+  --color-brand-400: #d1605f;
+  --color-brand-500: #c03b3a;
+  --color-brand-600: #a32a29; /* Equity Primary Red */
+  --color-brand-700: #871d1d;
+  --color-brand-800: #6a1717;
+  --color-brand-900: #4c1010;
+  --color-brand-950: #2a0808;
 
-  /* ── Accent (Amber/Gold — Equity brand feel) ──────────────────────────── */
-  --color-accent-50: #fffbeb;
-  --color-accent-100: #fef3c7;
-  --color-accent-200: #fde68a;
-  --color-accent-300: #fcd34d;
-  --color-accent-400: #fbbf24;
-  --color-accent-500: #f59e0b;
-  --color-accent-600: #d97706;
-  --color-accent-700: #b45309;
-  --color-accent-800: #92400e;
-  --color-accent-900: #78350f;
+  /* ── Accent Colors (Moi University Green) ────────────────────────────── */
+  --color-accent-50: #e8fcf3;
+  --color-accent-100: #d0f5e1;
+  --color-accent-200: #a1ecc3;
+  --color-accent-300: #64d79a;
+  --color-accent-400: #26c271;
+  --color-accent-500: #00ab55;
+  --color-accent-600: #008d46; /* Moi Primary Green */
+  --color-accent-700: #007a3c;
+  --color-accent-800: #005c2d;
+  --color-accent-900: #003e1e;
 
   /* ── Success / Error / Warning ────────────────────────────────────────── */
   --color-success-500: #22c55e;
@@ -68,7 +69,7 @@
   --radius-full: 9999px;
 
   /* ── Shadows ──────────────────────────────────────────────────────────── */
-  --shadow-glow: 0 0 30px rgba(59, 130, 246, 0.15);
+  --shadow-glow: 0 0 30px rgba(163, 42, 41, 0.15);
   --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.3);
   --shadow-elevated: 0 8px 40px rgba(0, 0, 0, 0.4);
 
@@ -218,6 +219,29 @@
   @keyframes pulse {
     0%, 100% { opacity: 1; transform: scale(1); }
     50% { opacity: 0.5; transform: scale(1.5); }
+  }
+
+  /* Shake animation for errors */
+  .animate-shake {
+    animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+  }
+
+  @keyframes shake {
+    10%, 90% { transform: translate3d(-1px, 0, 0); }
+    20%, 80% { transform: translate3d(2px, 0, 0); }
+    30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+    40%, 60% { transform: translate3d(4px, 0, 0); }
+  }
+
+  /* Float animation for decorative elements */
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+    100% { transform: translateY(0px); }
   }
 }
 

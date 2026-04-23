@@ -61,29 +61,75 @@ export default function ResultsPanel({ initialData, compact = false }: { initial
         </div>
       )}
 
-      <div className={`space-y-4 ${compact ? 'max-h-[320px] overflow-y-auto pr-1' : ''}`}>
-        {positions.map((position) => {
-          const candidates = compact ? position.candidates.slice(0, 2) : position.candidates;
+        {positions.map((position, pIdx) => {
+          const candidates = compact ? position.candidates.slice(0, 3) : position.candidates;
           return (
-            <div key={position.id} className="rounded-xl border border-white/10 bg-surface-800/70 p-3 shadow-inner shadow-black/20">
-              <p className="mb-2 text-sm font-semibold text-white">{position.title}</p>
-              <div className="space-y-2">
-                {candidates.map((c) => (
-                  <div key={c.id}>
-                    <div className="mb-1 flex items-center justify-between text-xs text-slate-300">
-                      <span className="truncate pr-2">{c.name}</span>
-                      <span>{c.votes} votes</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-surface-700">
-                      <div className="h-2 rounded-full bg-brand-500 transition-all duration-700" style={{ width: `${Math.max(c.percentage, 1)}%` }} />
+            <div key={position.id} className="relative group">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-[10px] uppercase font-black tracking-widest text-slate-500 group-hover:text-brand-400 transition-colors">
+                  {position.title}
+                </h4>
+                <span className="text-[10px] font-bold text-slate-600 bg-white/5 px-2 py-0.5 rounded-full">
+                  {position.totalVotes} Total
+                </span>
+              </div>
+              
+              <div className="space-y-4">
+                {candidates.map((c, idx) => (
+                  <div key={c.id} className="relative">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="relative">
+                        <div className={`absolute -inset-1 rounded-full blur-sm opacity-0 group-hover:opacity-100 transition-opacity ${idx === 0 ? 'bg-brand-500/20' : 'bg-slate-500/10'}`}></div>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img 
+                          src={c.photoUrl || '/placeholder-avatar.png'} 
+                          alt={c.name}
+                          className={`relative w-10 h-10 rounded-full object-cover border-2 ${idx === 0 ? 'border-brand-500/50' : 'border-white/10'}`}
+                        />
+                        {idx === 0 && (
+                          <div className="absolute -top-1 -right-1 w-4 h-4 bg-brand-600 rounded-full flex items-center justify-center border border-surface-900 shadow-lg">
+                            <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-end mb-1.5">
+                          <div>
+                            <p className={`text-sm font-bold truncate ${idx === 0 ? 'text-white' : 'text-slate-200'}`}>
+                              {c.name}
+                            </p>
+                            <p className="text-[10px] text-slate-500 font-medium">
+                              {c.school}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <span className={`text-xs font-black ${idx === 0 ? 'text-brand-400' : 'text-slate-400'}`}>
+                              {c.percentage}%
+                            </span>
+                            <p className="text-[9px] text-slate-600 font-bold uppercase tracking-tighter">
+                              {c.votes} Votes
+                            </p>
+                          </div>
+                        </div>
+                        <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full rounded-full transition-all duration-1000 ease-out ${
+                              idx === 0 ? 'bg-gradient-to-r from-brand-600 to-brand-400 shadow-[0_0_8px_rgba(163,42,41,0.4)]' : 'bg-slate-600'
+                            }`}
+                            style={{ width: `${Math.max(c.percentage, 2)}%` }}
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
+              {pIdx < positions.length - 1 && <div className="mt-6 border-b border-white/5" />}
             </div>
           );
         })}
-      </div>
     </Card>
   );
 }

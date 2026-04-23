@@ -6,6 +6,8 @@ import { verifyVoterToken } from '@/lib/jwt';
 import { generateResultsPayload } from '@/lib/results';
 import { logVoteAttempt } from '@/lib/audit';
 
+import { sendSMS, SMS_TEMPLATES } from '@/lib/sms';
+
 const submitSchema = z.object({
   deviceHash: z.string().min(1, 'Device fingerprint missing'),
   selections: z.array(z.object({
@@ -136,6 +138,15 @@ export async function POST(req: NextRequest) {
       });
     } catch (e) {
       console.error('Failed to trigger socket.io broadcast:', e);
+    }
+
+    // 5. Send Vote Confirmation SMS
+    if (phone) {
+      try {
+        await sendSMS(phone, SMS_TEMPLATES.voteConfirmation());
+      } catch (smsErr) {
+        console.error('[vote-submit] Vote cast but SMS failed:', smsErr);
+      }
     }
 
     const res = success({ message: 'Vote submitted successfully' });

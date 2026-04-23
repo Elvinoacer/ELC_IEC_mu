@@ -12,7 +12,8 @@
     "db:push": "npx prisma db push",
     "db:studio": "npx prisma studio",
     "db:generate": "npx prisma generate",
-    "db:seed": "npx tsx prisma/seed.ts"
+    "db:seed": "npx tsx prisma/seed.ts",
+    "db:seed:voters": "npx tsx prisma/seed-voters.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1035.0",

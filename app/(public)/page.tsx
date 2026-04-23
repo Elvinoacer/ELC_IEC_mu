@@ -18,19 +18,44 @@ export default function Home() {
 
   return (
     <PublicShell>
-      <div className="mx-auto mb-6 w-full max-w-6xl px-4 text-center md:px-6">
-        <p className="text-xs uppercase tracking-[0.25em] text-accent-300/70">Equity Leaders Program · Moi Chapter</p>
-        <h1 className="mt-3 text-3xl font-bold text-white md:text-5xl">Vote with Confidence</h1>
-        <p className="mx-auto mt-3 max-w-2xl text-sm text-slate-300 md:text-base">Secure OTP verification, transparent live outcomes, and a premium election experience for every voter.</p>
-      </div>
+      <div className="mx-auto max-w-7xl px-4 py-12 md:px-6 lg:py-20">
+        <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-12 lg:gap-16">
+          
+          {/* Left Column: Hero & Auth */}
+          <div className="flex flex-col lg:col-span-5">
+            <div className="mb-10 space-y-6">
+              <div className="inline-flex items-center gap-2 bg-accent-500/10 px-3 py-1 rounded-full border border-accent-500/20">
+                <span className="w-2 h-2 rounded-full bg-accent-500 live-pulse"></span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-accent-400">Live Election Protocol</span>
+              </div>
+              
+              <h1 className="text-4xl font-black tracking-tight text-white md:text-6xl lg:leading-[1.1]">
+                Vote with <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-accent-400">Confidence</span>
+              </h1>
+              
+              <p className="max-w-md text-lg leading-relaxed text-slate-400">
+                Equity Leaders Program Moi Chapter. Secure OTP verification ensures your voice is heard. Real-time auditing active.
+              </p>
+            </div>
 
-      <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-6 px-4 py-8 md:grid-cols-[420px_1fr] md:px-6">
-        <div id="auth-card">
-          <AuthCard onAlreadyVoted={() => document.getElementById('live-results')?.scrollIntoView({ behavior: 'smooth' })} />
-        </div>
+            <div id="auth-card" className="fade-in">
+              <AuthCard onAlreadyVoted={() => document.getElementById('live-results')?.scrollIntoView({ behavior: 'smooth' })} />
+            </div>
+          </div>
 
-        <div id="live-results">
-          <ResultsPanel initialData={resultsData} compact />
+          {/* Right Column: Live Results */}
+          <div id="live-results" className="lg:col-span-7 slide-up">
+            <div className="relative group">
+              {/* Decorative background glow */}
+              <div className="absolute -inset-4 bg-brand-500/5 blur-3xl rounded-[3rem] opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
+              
+              <div className="relative">
+                <ResultsPanel initialData={resultsData} compact />
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     </PublicShell>

@@ -14,6 +14,7 @@ import { NextResponse } from "next/server";
 export interface ApiSuccess<T = unknown> {
   ok: true;
   data: T;
+  meta?: any;
 }
 
 export interface ApiError {
@@ -26,8 +27,19 @@ export type ApiResponse<T = unknown> = ApiSuccess<T> | ApiError;
 
 // ─── Success Responses ────────────────────────────────────────────────────────
 
-export function success<T>(data: T, status = 200): NextResponse<ApiSuccess<T>> {
-  return NextResponse.json({ ok: true, data } as ApiSuccess<T>, { status });
+export function success<T>(
+  data: T,
+  status = 200,
+  meta?: any,
+): NextResponse<ApiSuccess<T>> {
+  return NextResponse.json(
+    {
+      ok: true,
+      data,
+      ...(meta && { meta }),
+    } as ApiSuccess<T>,
+    { status },
+  );
 }
 
 export function created<T>(data: T): NextResponse<ApiSuccess<T>> {

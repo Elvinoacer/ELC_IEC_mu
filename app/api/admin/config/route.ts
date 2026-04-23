@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    return success({ config });
+    return success(config);
   } catch (err) {
     return serverError(err);
   }
