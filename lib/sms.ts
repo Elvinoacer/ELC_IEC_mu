@@ -48,6 +48,7 @@ export async function sendSMS(to: string, message: string): Promise<void> {
     const options: any = {
       to: [to],
       message,
+      enqueue: true,
     };
 
     if (process.env.AT_SENDER_ID) {
@@ -55,21 +56,29 @@ export async function sendSMS(to: string, message: string): Promise<void> {
     }
 
     const result = (await sms.send(options)) as any;
+    console.log("[SMS RAW]", JSON.stringify(result, null, 2));
 
-    // Extract messageId from the result (usually it's in SMSMessageData.Recipients[0].messageId)
-    const recipient = result?.SMSMessageData?.Recipients?.[0];
-    const messageId = recipient?.messageId;
+    const recipient = result?.SMSMessageData?.Recipients?.[0] || 
+                     result?.SMSMessageData?.recipients?.[0] || 
+                     result?.recipients?.[0];
+
+    const messageId = recipient?.messageId || 
+                     recipient?.messageID || 
+                     recipient?.MessageId || 
+                     recipient?.id || 
+                     recipient?.messageParts?.[0]?.id;
+
     const status = recipient?.status || 'Sent';
 
     await prisma.smsLog.update({
       where: { id: log.id },
       data: { 
-        messageId,
+        messageId: messageId?.toString(),
         status: status.toUpperCase(),
       }
     });
 
-    console.log(`[SMS] Sent to ${to}: Status=${status}, ID=${messageId}`);
+    console.log(`[SMS] Sent to ${to}: Status=${status}, ID=${messageId ?? 'N/A'}`);
   } catch (err: any) {
     console.error(`[SMS] Failed to send to ${to}:`, err);
     await prisma.smsLog.update({
