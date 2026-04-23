@@ -3,7 +3,7 @@ import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { success, error, serverError } from '@/lib/response';
 import { normalizePhone } from '@/lib/phone';
-import { sendOTP, checkOTPRateLimit } from '@/lib/otp';
+import { findRecentReusableOTP, getOTPRateLimitState, OTP_COOLDOWN_SECONDS, sendOTP } from '@/lib/otp';
 
 const schema = z.object({
   phone: z.string().min(1, 'Phone is required'),
@@ -14,57 +14,46 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const result = schema.safeParse(body);
 
-    if (!result.success) {
-      return error(result.error.issues[0].message, 400);
-    }
+    if (!result.success) return error(result.error.issues[0].message, 400);
 
     const normalizedPhone = normalizePhone(result.data.phone);
+    if (!normalizedPhone) return error('Invalid phone number format.', 400);
 
-    if (!normalizedPhone) {
-      return error('Invalid phone number format.', 400);
-    }
+    const voter = await prisma.voter.findUnique({ where: { phone: normalizedPhone } });
+    if (!voter) return error("This number isn't in the ELP voter registry.", 404);
+    if (voter.hasVoted) return error('You have already cast your vote.', 409);
 
-    // 1. Check if voter exists
-    const voter = await prisma.voter.findUnique({
-      where: { phone: normalizedPhone }
-    });
-
-    if (!voter) {
-      return error('This number is not registered in the ELP Moi Chapter voter registry.', 404);
-    }
-
-    // 2. Check if they already voted
-    if (voter.hasVoted) {
-      return error('You have already cast your vote. Redirecting to results...', 409);
-    }
-
-    // 3. Check voting window config
     const config = await prisma.votingConfig.findUnique({ where: { id: 1 } });
     if (config) {
       const now = new Date();
-      if (config.isManuallyClosed) {
-        return error('The voting system is currently closed by the IEC.', 403);
-      }
-      if (now < config.opensAt) {
-        return error('Voting has not started yet.', 403);
-      }
-      if (now > config.closesAt) {
-        return error('Voting has already closed.', 403);
-      }
+      if (config.isManuallyClosed) return error('The voting system is currently closed by the IEC.', 403);
+      if (now < config.opensAt) return error('Voting has not started yet.', 403);
+      if (now > config.closesAt) return error('Voting has already closed.', 403);
     }
 
-    const ipAddress = req.headers.get('x-forwarded-for') || (req as any).ip || undefined;
+    const ipAddress = req.headers.get('x-forwarded-for') || undefined;
 
-    // 4. Rate limiting for OTP sends
-    const canSend = await checkOTPRateLimit(normalizedPhone, ipAddress);
-    if (!canSend) {
-      return error('Too many OTP requests. Please try again later.', 429);
+    const rateLimit = await getOTPRateLimitState(normalizedPhone, ipAddress);
+    if (!rateLimit.allowed) {
+      return error(`Too many OTP requests. Try again in ${Math.ceil(rateLimit.retryAfterSeconds / 60)} minute(s).`, 429);
     }
 
-    // 5. Send OTP
-    await sendOTP(normalizedPhone, ipAddress);
+    const recentOtp = await findRecentReusableOTP(normalizedPhone);
+    if (recentOtp) {
+      return success({
+        alreadySent: true,
+        expiresAt: recentOtp.expiresAt.toISOString(),
+        cooldownSeconds: OTP_COOLDOWN_SECONDS,
+      });
+    }
 
-    return success({ message: 'OTP sent successfully' });
+    const expiresAt = await sendOTP(normalizedPhone, ipAddress);
+
+    return success({
+      alreadySent: false,
+      expiresAt: expiresAt.toISOString(),
+      cooldownSeconds: OTP_COOLDOWN_SECONDS,
+    });
   } catch (err) {
     return serverError(err);
   }

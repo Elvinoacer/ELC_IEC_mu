@@ -55,8 +55,7 @@ export async function POST(req: NextRequest) {
       // If REJECTED, they can re-apply.
     }
 
-    const ipAddress =
-      req.headers.get("x-forwarded-for") || (req as any).ip || undefined;
+    const ipAddress = req.headers.get("x-forwarded-for") || undefined;
 
     // 3. Rate limiting for OTP sends (max 5 per hour)
     const canSend = await checkOTPRateLimit(normalizedPhone, ipAddress);

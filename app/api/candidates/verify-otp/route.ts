@@ -28,16 +28,16 @@ export async function POST(req: NextRequest) {
 
     const verifyResult = await verifyOTP(normalizedPhone, code);
 
-    if (verifyResult === "expired") {
+    if (verifyResult.status === "expired") {
       return error(
         "OTP has expired or is invalid. Please request a new one.",
         400,
       );
     }
-    if (verifyResult === "wrong") {
+    if (verifyResult.status === "wrong") {
       return error("Incorrect OTP.", 400);
     }
-    if (verifyResult === "locked") {
+    if (verifyResult.status === "locked") {
       return error(
         "Too many incorrect attempts. Please request a new OTP.",
         429,
