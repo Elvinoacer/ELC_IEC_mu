@@ -97,17 +97,38 @@ export default function Home() {
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-400 to-accent-600">Voice</span>
                 </h1>
                 <p className="text-lg text-slate-400 font-medium leading-relaxed">
-                  Voter registration is mandatory for the ELP Moi Chapter elections. Link your verified email address now to receive your secure OTP on election day.
+                  The ELP Moi Chapter voter registry is open. Ensure your eligibility by linking your verified email address today.
                 </p>
               </div>
 
-              <div className="flex flex-col gap-6">
+              <div className="space-y-6">
                 <div className="p-6 rounded-3xl bg-white/5 border border-white/10 space-y-4">
-                  <h3 className="text-sm font-black uppercase tracking-widest text-slate-500">Candidate Information</h3>
-                  <p className="text-sm text-slate-400">Are you planning to run for a leadership position?</p>
+                  <h3 className="text-sm font-black uppercase tracking-widest text-slate-500">Eligibility Requirements</h3>
+                  <ul className="space-y-3">
+                    {[
+                      'Pre-registered scholar',
+                      'Verified phone number',
+                      'Verified email address'
+                    ].map((req, i) => (
+                      <li key={i} className="flex items-center gap-3 text-slate-300">
+                        <div className="w-5 h-5 rounded-full bg-accent-500/20 flex items-center justify-center">
+                          <svg className="w-3 h-3 text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                        </div>
+                        <span className="text-sm font-medium">{req}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
                   <Link href="/register-candidate">
-                    <Button variant="outline" className="w-full border-accent-500/20 text-accent-400 hover:bg-accent-500/10 font-bold">
-                      Run for Office (Candidate Registration)
+                    <Button variant="outline" className="w-full border-white/10 hover:bg-white/5 text-xs font-bold py-4">
+                      Run for Office
+                    </Button>
+                  </Link>
+                  <Link href="/results">
+                    <Button variant="outline" className="w-full border-white/10 hover:bg-white/5 text-xs font-bold py-4">
+                      View Positions
                     </Button>
                   </Link>
                 </div>

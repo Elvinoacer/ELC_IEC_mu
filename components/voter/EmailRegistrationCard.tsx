@@ -7,6 +7,7 @@ import SmartPhoneInput from '@/components/ui/PhoneInput';
 import OtpInput from '@/components/voter/OtpInput';
 import Input from '@/components/ui/Input';
 import { normalizePhone } from '@/lib/phone';
+import Link from 'next/link';
 
 type Step = 'PHONE' | 'EMAIL_ENTRY' | 'OTP_VERIFY' | 'SUCCESS';
 
@@ -21,6 +22,7 @@ export default function EmailRegistrationCard() {
   const [cooldownSeconds, setCooldownSeconds] = useState(60);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isAlreadyRegistered, setIsAlreadyRegistered] = useState(false);
 
   const otpCode = useMemo(() => otp.join(''), [otp]);
 
@@ -32,15 +34,47 @@ export default function EmailRegistrationCard() {
     return () => clearInterval(interval);
   }, [expiresAt]);
 
-  const handlePhoneContinue = () => {
+  const handlePhoneContinue = async () => {
     const parsed = normalizePhone(localPhone);
     if (!parsed) {
       setError('Use a valid Kenyan mobile number (07xx or 01xx).');
       return;
     }
-    setNormalizedPhone(parsed);
+    
+    setLoading(true);
     setError(null);
-    setStep('EMAIL_ENTRY');
+
+    try {
+      const res = await fetch('/api/voter/check-registration', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: parsed }),
+      });
+
+      const json = await res.json();
+
+      if (!res.ok) {
+        setError(json.error || 'Check failed.');
+        setLoading(false);
+        return;
+      }
+
+      const data = json.data;
+      setNormalizedPhone(parsed);
+
+      if (data.isRegistered) {
+        setMaskedEmail(data.maskedEmail);
+        setIsAlreadyRegistered(true);
+        setStep('SUCCESS');
+      } else {
+        setIsAlreadyRegistered(false);
+        setStep('EMAIL_ENTRY');
+      }
+    } catch {
+      setError('Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSendVerification = async () => {
@@ -237,21 +271,32 @@ export default function EmailRegistrationCard() {
           </div>
 
           <div>
-            <h2 className="text-lg font-bold text-white mb-2">Email Verified!</h2>
+            <h2 className="text-lg font-bold text-white mb-2">
+              {isAlreadyRegistered ? 'Account Secure' : 'Email Verified!'}
+            </h2>
             <p className="text-sm text-slate-300">
-              Your email has been verified and linked to your voter account.
+              {isAlreadyRegistered 
+                ? 'Your account is already linked to a verified email address.'
+                : 'Your email has been verified and linked to your voter account.'}
             </p>
-            <p className="text-sm text-slate-400 mt-2">
-              On election day, your OTP will be sent to <span className="font-semibold text-white">{maskedEmail}</span>.
+            {maskedEmail && (
+              <div className="mt-4 p-3 rounded-xl bg-white/5 border border-white/10">
+                <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Associated Email</p>
+                <p className="text-sm font-bold text-white">{maskedEmail}</p>
+              </div>
+            )}
+            <p className="text-xs text-slate-400 mt-4 leading-relaxed">
+              On election day, your secure voting OTP will be sent to this email address.
             </p>
           </div>
 
-          <a
-            href="/"
-            className="inline-block px-6 py-2.5 rounded-xl text-sm font-medium bg-brand-600 text-white hover:bg-brand-500 transition-all shadow-lg"
-          >
-            Back to Home
-          </a>
+          <div className="pt-2">
+            <Link href="/" className="w-full">
+              <Button variant="outline" className="w-full border-white/10 hover:bg-white/5">
+                Return to Home
+              </Button>
+            </Link>
+          </div>
         </div>
       )}
     </Card>
