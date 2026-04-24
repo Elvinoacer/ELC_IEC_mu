@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
-import PhoneInput from '@/components/voter/PhoneInput';
+import SmartPhoneInput from '@/components/ui/PhoneInput';
 import OtpInput from '@/components/voter/OtpInput';
 import { generateDeviceFingerprint } from '@/lib/fingerprint';
 import { normalizePhone } from '@/lib/phone';
@@ -179,7 +179,7 @@ export default function AuthCard({ onAlreadyVoted }: { onAlreadyVoted?: () => vo
 
       {step === 'PHONE' ? (
         <div className="space-y-4">
-          <PhoneInput value={localPhone} onChange={setLocalPhone} disabled={loading} autoFocus />
+          <SmartPhoneInput value={localPhone} onChange={setLocalPhone} disabled={loading} autoFocus />
           <Button className="w-full min-h-10 sm:min-h-12" onClick={sendOtp} loading={loading} disabled={deviceCheckLoading}>Get My Secure Code</Button>
         </div>
       ) : (

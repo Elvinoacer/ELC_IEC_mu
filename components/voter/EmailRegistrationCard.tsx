@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
-import PhoneInput from '@/components/voter/PhoneInput';
+import SmartPhoneInput from '@/components/ui/PhoneInput';
 import OtpInput from '@/components/voter/OtpInput';
 import Input from '@/components/ui/Input';
 import { normalizePhone } from '@/lib/phone';
@@ -157,7 +157,7 @@ export default function EmailRegistrationCard() {
 
       {step === 'PHONE' && (
         <div className="space-y-4">
-          <PhoneInput value={localPhone} onChange={setLocalPhone} disabled={loading} autoFocus />
+          <SmartPhoneInput value={localPhone} onChange={setLocalPhone} disabled={loading} autoFocus />
           <Button className="w-full min-h-10 sm:min-h-12" onClick={handlePhoneContinue} loading={loading}>
             Continue
           </Button>

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import SmartPhoneInput from '@/components/ui/PhoneInput';
 
 interface AddVoterModalProps {
   isOpen: boolean;
@@ -63,13 +64,13 @@ export default function AddVoterModal({ isOpen, onClose, onSuccess }: AddVoterMo
             <p className="text-sm text-error-500 bg-error-500/10 p-3 rounded-lg border border-error-500/20">{error}</p>
           )}
 
-          <Input
+          <SmartPhoneInput
             label="Phone Number"
-            placeholder="e.g. +254712345678"
+            placeholder="e.g. +254 712 345 678"
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            onChange={setPhone}
             required
-            hint="E.164 format or standard Kenyan number."
+            hint="Auto-formats to +254. Example: Typing 07... becomes +2547..."
           />
 
           <Input

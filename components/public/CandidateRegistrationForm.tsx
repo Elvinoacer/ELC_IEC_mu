@@ -5,6 +5,7 @@ import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import CustomSelect from '@/components/ui/Select';
+import SmartPhoneInput from '@/components/ui/PhoneInput';
 
 interface Position {
   id: number;
@@ -207,11 +208,11 @@ export default function CandidateRegistrationForm({ positions }: Props) {
             </p>
           </div>
           <div className="space-y-4">
-            <Input
+            <SmartPhoneInput
               label="Phone Number"
               placeholder="+254 7XX XXX XXX"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={setPhone}
               required
               className="bg-white/5 border-white/10 text-white placeholder:text-slate-600 focus:ring-brand-500/30"
             />
