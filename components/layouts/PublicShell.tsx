@@ -25,28 +25,72 @@ export default function PublicShell({ children }: { children: React.ReactNode })
       </div>
 
       {/* Fixed Header */}
-      <header className="fixed top-0 left-0 w-full flex justify-between items-center px-3 sm:px-6 h-14 sm:h-16 bg-surface-900/70 backdrop-blur-md border-b border-white/10 z-50 shadow-2xl">
-        <div className="flex items-center gap-3 sm:gap-8">
-          <Link href="/" className="flex items-center">
-            <ELPLogo />
-          </Link>
-          <nav className="hidden md:flex items-center gap-6">
-            <Link href="/results" className={`${pathname === '/results' ? 'text-brand-400 border-b-2 border-brand-500' : 'text-slate-400 hover:text-white'} pb-1 font-semibold text-sm transition-all`}>Results</Link>
-            <Link href="/register-candidate" className={`${pathname === '/register-candidate' ? 'text-brand-400 border-b-2 border-brand-500' : 'text-slate-400 hover:text-white'} pb-1 font-semibold text-sm transition-all`}>Run for Office</Link>
-          </nav>
-        </div>
-        <div className="flex items-center gap-2 sm:gap-4">
-          <Link href="/results" className="p-2 text-slate-400 hover:bg-white/5 transition-all duration-300 rounded-full" aria-label="View live results">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
-          </Link>
-          <Link href="/admin" className="p-2 text-slate-400 hover:bg-white/5 transition-all duration-300 rounded-full" aria-label="Admin portal">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-          </Link>
+      <header className="fixed top-0 left-0 right-0 z-50 flex justify-center px-4 py-3 sm:px-8 sm:py-5">
+        <div className="w-full max-w-7xl flex justify-between items-center px-4 h-14 sm:h-16 bg-surface-900/40 backdrop-blur-2xl border border-white/5 rounded-2xl sm:rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] relative overflow-hidden group">
+          {/* Subtle animated border glow */}
+          <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-brand-500/50 to-transparent opacity-50" />
+          
+          <div className="flex items-center gap-4 sm:gap-10">
+            <Link href="/" className="flex items-center transition-transform active:scale-95 duration-300">
+              <ELPLogo />
+            </Link>
+            <nav className="hidden md:flex items-center gap-8">
+              {[
+                { href: '/results', label: 'Results' },
+                { href: '/register-candidate', label: 'Run for Office' }
+              ].map((link) => (
+                <Link 
+                  key={link.href}
+                  href={link.href} 
+                  className={`relative py-1 font-bold text-sm tracking-wide transition-all hover:text-white ${
+                    pathname === link.href ? 'text-brand-400' : 'text-slate-400'
+                  }`}
+                >
+                  {link.label}
+                  {pathname === link.href && (
+                    <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-brand-500 rounded-full shadow-[0_0_8px_rgba(163,42,41,0.6)]" />
+                  )}
+                </Link>
+              ))}
+            </nav>
+          </div>
+
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Link 
+              href="/results" 
+              className="group/btn relative p-2 text-slate-400 hover:text-white transition-all duration-300 rounded-xl bg-white/5 sm:bg-transparent hover:bg-white/10 active:scale-90"
+              aria-label="View live results"
+            >
+              <div className="relative z-10">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+                {/* Live pulse indicator */}
+                <span className="absolute top-0 right-0 w-1.5 h-1.5 bg-accent-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
+              </div>
+              <span className="absolute inset-0 rounded-xl bg-brand-500/0 group-hover/btn:bg-brand-500/10 transition-all duration-300" />
+            </Link>
+            
+            <Link 
+              href="/admin" 
+              className="group/btn relative flex items-center justify-center p-2 text-slate-400 hover:text-white transition-all duration-300 rounded-xl bg-white/5 sm:bg-transparent hover:bg-white/10 active:scale-90"
+              aria-label="Admin portal"
+            >
+              <div className="relative z-10">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                {/* Status indicator dot with pulse */}
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-brand-500 rounded-full border-2 border-surface-900 shadow-[0_0_8px_rgba(163,42,41,0.8)] animate-pulse" />
+              </div>
+              <span className="absolute inset-0 rounded-xl bg-white/0 group-hover/btn:bg-white/10 transition-all duration-300" />
+            </Link>
+          </div>
         </div>
       </header>
 
       {/* Main content */}
-      <main className="relative z-10 flex-1 flex flex-col items-center px-[var(--spacing-page)] pt-20 sm:pt-24 pb-12 w-full">
+      <main className="relative z-10 flex-1 flex flex-col items-center px-[var(--spacing-page)] pt-24 sm:pt-32 pb-12 w-full">
         {children}
       </main>
 
