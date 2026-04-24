@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { success, error, serverError } from "@/lib/response";
 import { normalizePhone } from "@/lib/phone";
 import { sendOTP, checkOTPRateLimit, findRecentReusableOTP } from "@/lib/otp";
+import { maskEmail } from "@/lib/email";
 
 const phoneSchema = z.object({
   phone: z.string().min(1, "Phone is required"),
@@ -85,6 +86,7 @@ export async function POST(req: NextRequest) {
         message: "A verification code has already been sent to this number.",
         alreadySent: true,
         expiresAt: recentOtp.expiresAt.toISOString(),
+        maskedEmail: voter.email ? maskEmail(voter.email) : null,
       });
     }
 
@@ -102,6 +104,7 @@ export async function POST(req: NextRequest) {
       message: emailFailed ? "OTP created but email delivery may have failed. Request a new code if you don't receive it." : "OTP sent successfully",
       alreadySent: false,
       expiresAt: expiresAt.toISOString(),
+      maskedEmail: maskEmail(voter.email),
     });
   } catch (err) {
     return serverError(err);

@@ -23,6 +23,7 @@ export default function CandidateRegistrationForm({ positions }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  const [maskedEmail, setMaskedEmail] = useState<string | null>(null);
 
   // Phone Step
   const [phone, setPhone] = useState('');
@@ -69,8 +70,13 @@ export default function CandidateRegistrationForm({ positions }: Props) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to send verification code');
+      
+      if (data.data?.maskedEmail) {
+        setMaskedEmail(data.data.maskedEmail);
+      }
+
       if (data.data?.alreadySent) {
-        setInfo('A valid OTP is already active for this phone. Please use the previously sent code.');
+        setInfo('A valid OTP is already active for this account. Please use the code sent to your email.');
       }
       setStep('OTP');
     } catch (err: any) {
@@ -229,7 +235,11 @@ export default function CandidateRegistrationForm({ positions }: Props) {
           <div className="space-y-2 text-center">
             <h2 className="text-2xl font-bold text-white tracking-tight">Secure Verification</h2>
             <p className="text-slate-400">
-              We've sent a secure 6-digit code to <span className="font-bold text-white tracking-wider">{phone}</span>
+              We've sent a secure 6-digit code to your registered email: <br />
+              <span className="font-bold text-brand-400 tracking-wider text-lg">{maskedEmail || 'your email'}</span>
+            </p>
+            <p className="text-[10px] uppercase font-black tracking-widest text-slate-500 pt-2 italic">
+              Please check your inbox (and spam folder) for the code.
             </p>
           </div>
           
