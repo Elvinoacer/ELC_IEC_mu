@@ -47,7 +47,7 @@ export function getElectionPhase(config: any): PhaseInfo {
     if (now < regOpen) {
       return {
         phase: 'UPCOMING_REGISTRATION',
-        label: 'Candidate Registration',
+        label: 'Election Registration',
         subLabel: 'Registration portal opens in:',
         targetDate: regOpen,
         color: 'accent'
@@ -57,7 +57,7 @@ export function getElectionPhase(config: any): PhaseInfo {
       return {
         phase: 'REGISTRATION_OPEN',
         label: 'Registration is OPEN',
-        subLabel: 'Apply now to run for office.',
+        subLabel: 'Link your email to secure your ballot.',
         targetDate: regClose,
         color: 'accent'
       };
