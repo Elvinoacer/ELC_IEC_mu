@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { getElectionPhase, type PhaseInfo } from '@/lib/phases';
 import type { ResultsPayload } from '@/lib/results';
 import EmailRegistrationCard from '@/components/voter/EmailRegistrationCard';
+import WinnersCelebration from '@/components/voter/WinnersCelebration';
 
 export default function Home() {
   const [resultsData, setResultsData] = useState<ResultsPayload | null>(null);
@@ -87,7 +88,10 @@ export default function Home() {
           </div>
         )}
 
-        {isRegistrationPhase ? (
+        {phaseInfo?.phase === 'VOTING_CLOSED' ? (
+          /* CELEBRATION INTERFACE */
+          <WinnersCelebration data={resultsData} />
+        ) : isRegistrationPhase ? (
           /* VOTER REGISTRATION INTERFACE */
           <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-start slide-up">
             <div className="lg:col-span-5 space-y-8">
@@ -184,16 +188,6 @@ export default function Home() {
                   <Link href="/register-email">
                     <Button variant="outline" className="w-full mt-4 border-white/10 hover:bg-white/5">Link Your Email Now</Button>
                   </Link>
-                </div>
-              )}
-
-              {phaseInfo?.phase === 'VOTING_CLOSED' && (
-                <div className="p-8 rounded-3xl bg-white/5 border border-white/10 text-center space-y-4">
-                  <div className="w-16 h-16 bg-success-500/10 rounded-2xl flex items-center justify-center mx-auto text-success-500">
-                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                  </div>
-                  <h3 className="text-xl font-bold text-white">Elections Closed</h3>
-                  <p className="text-sm text-slate-400">Voting has officially ended. You can view the final results on the right.</p>
                 </div>
               )}
             </div>
