@@ -143,45 +143,45 @@ export default function CandidateRegistrationForm({ positions }: Props) {
   };
 
   return (
-    <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl p-8 md:p-12">
+    <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl p-5 sm:p-8 md:p-12">
       {/* Progress Steps Header */}
       {step !== 'SUCCESS' && (
-        <div className="flex items-center justify-between mb-12 pb-8 border-b border-white/5 relative">
-          <div className="absolute top-[20px] left-0 right-0 h-0.5 bg-white/5 -z-10 rounded" />
+        <div className="flex items-center justify-between mb-8 pb-6 md:mb-12 md:pb-8 border-b border-white/5 relative">
+          <div className="absolute top-[18px] md:top-[20px] left-0 right-0 h-px bg-white/5 -z-10 rounded" />
           
-          <div className="flex flex-col items-center gap-3 relative z-10">
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-base transition-all duration-500 ${
-              step === 'PHONE' ? 'bg-brand-600 text-white shadow-[0_0_30px_rgba(163,42,41,0.4)] rotate-3' : 
+          <div className="flex flex-col items-center gap-2 md:gap-3 relative z-10">
+            <div className={`w-9 h-9 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center font-bold text-xs md:text-base transition-all duration-500 ${
+              step === 'PHONE' ? 'bg-brand-600 text-white shadow-[0_0_20px_rgba(163,42,41,0.3)] rotate-3' : 
               'bg-brand-600/10 text-brand-400 border border-brand-500/20'
             }`}>
               {step !== 'PHONE' && (step === 'OTP' || step === 'FORM') ? (
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
               ) : '01'}
             </div>
-            <span className={`text-[10px] uppercase font-black tracking-widest ${step === 'PHONE' ? 'text-white' : 'text-slate-500'}`}>Phone</span>
+            <span className={`text-[8px] md:text-[10px] uppercase font-black tracking-widest ${step === 'PHONE' ? 'text-white' : 'text-slate-500'}`}>Phone</span>
           </div>
 
-          <div className="flex flex-col items-center gap-3 relative z-10">
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-base transition-all duration-500 ${
-              step === 'OTP' ? 'bg-brand-600 text-white shadow-[0_0_30px_rgba(163,42,41,0.4)] rotate-3' : 
+          <div className="flex flex-col items-center gap-2 md:gap-3 relative z-10">
+            <div className={`w-9 h-9 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center font-bold text-xs md:text-base transition-all duration-500 ${
+              step === 'OTP' ? 'bg-brand-600 text-white shadow-[0_0_20px_rgba(163,42,41,0.3)] rotate-3' : 
               step === 'FORM' ? 'bg-brand-600/10 text-brand-400 border border-brand-500/20' :
               'bg-surface-800 text-slate-600 border border-white/5'
             }`}>
               {step === 'FORM' ? (
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
               ) : '02'}
             </div>
-            <span className={`text-[10px] uppercase font-black tracking-widest ${step === 'OTP' ? 'text-white' : 'text-slate-500'}`}>Verify</span>
+            <span className={`text-[8px] md:text-[10px] uppercase font-black tracking-widest ${step === 'OTP' ? 'text-white' : 'text-slate-500'}`}>Verify</span>
           </div>
 
-          <div className="flex flex-col items-center gap-3 relative z-10">
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-base transition-all duration-500 ${
-              step === 'FORM' ? 'bg-brand-600 text-white shadow-[0_0_30px_rgba(163,42,41,0.4)] rotate-3' : 
+          <div className="flex flex-col items-center gap-2 md:gap-3 relative z-10">
+            <div className={`w-9 h-9 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center font-bold text-xs md:text-base transition-all duration-500 ${
+              step === 'FORM' ? 'bg-brand-600 text-white shadow-[0_0_20px_rgba(163,42,41,0.3)] rotate-3' : 
               'bg-surface-800 text-slate-600 border border-white/5'
             }`}>
               03
             </div>
-            <span className={`text-[10px] uppercase font-black tracking-widest ${step === 'FORM' ? 'text-white' : 'text-slate-500'}`}>Details</span>
+            <span className={`text-[8px] md:text-[10px] uppercase font-black tracking-widest ${step === 'FORM' ? 'text-white' : 'text-slate-500'}`}>Details</span>
           </div>
         </div>
       )}
@@ -206,10 +206,10 @@ export default function CandidateRegistrationForm({ positions }: Props) {
 
       {/* STEP 1: PHONE */}
       {step === 'PHONE' && (
-        <form onSubmit={handleSendPhone} className="space-y-8 fade-in">
-          <div className="space-y-2">
-            <h2 className="text-2xl font-bold text-white tracking-tight">Verify Eligibility</h2>
-            <p className="text-slate-400 leading-relaxed">
+        <form onSubmit={handleSendPhone} className="space-y-6 md:space-y-8 fade-in">
+          <div className="space-y-1.5 md:space-y-2">
+            <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight">Verify Eligibility</h2>
+            <p className="text-sm md:text-base text-slate-400 leading-relaxed">
               Enter your registered ELP Moi Chapter phone number. Only pre-registered scholars can apply for candidacy.
             </p>
           </div>
@@ -220,9 +220,9 @@ export default function CandidateRegistrationForm({ positions }: Props) {
               value={phone}
               onChange={setPhone}
               required
-              className="bg-white/5 border-white/10 text-white placeholder:text-slate-600 focus:ring-brand-500/30"
+              className="bg-white/5 border-white/10 text-white placeholder:text-slate-600 focus:ring-brand-500/30 py-3 md:py-4"
             />
-            <Button type="submit" loading={loading} className="w-full bg-brand-600 hover:bg-brand-500 py-4 text-base font-bold shadow-xl shadow-brand-900/20" size="lg">
+            <Button type="submit" loading={loading} className="w-full bg-brand-600 hover:bg-brand-500 py-3.5 md:py-4 text-sm md:text-base font-bold shadow-xl shadow-brand-900/20" size="lg">
               Send Verification Code
             </Button>
           </div>
@@ -231,14 +231,14 @@ export default function CandidateRegistrationForm({ positions }: Props) {
 
       {/* STEP 2: OTP */}
       {step === 'OTP' && (
-        <form onSubmit={handleVerifyOtp} className="space-y-8 fade-in">
+        <form onSubmit={handleVerifyOtp} className="space-y-6 md:space-y-8 fade-in">
           <div className="space-y-2 text-center">
-            <h2 className="text-2xl font-bold text-white tracking-tight">Secure Verification</h2>
-            <p className="text-slate-400">
+            <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight">Secure Verification</h2>
+            <p className="text-sm md:text-base text-slate-400 leading-relaxed px-2">
               We've sent a secure 6-digit code to your registered email: <br />
-              <span className="font-bold text-brand-400 tracking-wider text-lg">{maskedEmail || 'your email'}</span>
+              <span className="font-bold text-brand-400 tracking-wider text-base md:text-lg">{maskedEmail || 'your email'}</span>
             </p>
-            <p className="text-[10px] uppercase font-black tracking-widest text-slate-500 pt-2 italic">
+            <p className="text-[9px] md:text-[10px] uppercase font-black tracking-widest text-slate-500 pt-2 italic">
               Please check your inbox (and spam folder) for the code.
             </p>
           </div>
@@ -251,15 +251,15 @@ export default function CandidateRegistrationForm({ positions }: Props) {
               onChange={(e) => setOtp(e.target.value)}
               required
               maxLength={6}
-              className="text-center tracking-[0.8em] text-4xl font-black bg-white/5 border-white/10 w-full max-w-[280px] h-20 rounded-2xl focus:ring-accent-500/30"
+              className="text-center tracking-[0.6em] md:tracking-[0.8em] text-3xl md:text-4xl font-black bg-white/5 border-white/10 w-full max-w-[240px] md:max-w-[280px] h-16 md:h-20 rounded-xl md:rounded-2xl focus:ring-accent-500/30"
             />
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-4 pt-4">
-            <Button type="button" variant="outline" onClick={() => setStep('PHONE')} className="w-full sm:w-auto border-white/10 text-slate-400 hover:bg-white/5" disabled={loading}>
+          <div className="flex flex-col sm:flex-row gap-3 md:gap-4 pt-2 md:pt-4">
+            <Button type="button" variant="outline" onClick={() => setStep('PHONE')} className="w-full sm:w-auto border-white/10 text-slate-400 hover:bg-white/5 py-3" disabled={loading}>
               Back
             </Button>
-            <Button type="submit" loading={loading} className="w-full sm:flex-1 bg-brand-600 hover:bg-brand-500 py-4 text-base font-bold shadow-xl shadow-brand-900/20" size="lg">
+            <Button type="submit" loading={loading} className="w-full sm:flex-1 bg-brand-600 hover:bg-brand-500 py-3.5 md:py-4 text-sm md:text-base font-bold shadow-xl shadow-brand-900/20" size="lg">
               Verify Identity
             </Button>
           </div>
@@ -268,13 +268,13 @@ export default function CandidateRegistrationForm({ positions }: Props) {
 
       {/* STEP 3: FORM */}
       {step === 'FORM' && (
-        <form onSubmit={handleFinalSubmit} className="space-y-10 fade-in">
-          <div className="space-y-2">
-            <h2 className="text-2xl font-bold text-white tracking-tight">Complete Your Profile</h2>
-            <p className="text-slate-400">Identity verified. Please provide your candidacy details for the ballot.</p>
+        <form onSubmit={handleFinalSubmit} className="space-y-8 md:space-y-10 fade-in">
+          <div className="space-y-1.5 md:space-y-2">
+            <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight">Complete Your Profile</h2>
+            <p className="text-sm md:text-base text-slate-400 leading-relaxed">Identity verified. Please provide your candidacy details for the ballot.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-8">
             <Input
               label="Full Official Name"
               placeholder="e.g. Jane Mary Doe"
@@ -331,10 +331,10 @@ export default function CandidateRegistrationForm({ positions }: Props) {
             required
           />
 
-          <div className="space-y-3">
+          <div className="space-y-4">
             <label className="block text-[10px] uppercase font-black tracking-widest text-slate-500 ml-1">Ballot Photography</label>
             <div 
-              className={`relative border-2 border-dashed rounded-3xl p-10 text-center cursor-pointer transition-all duration-300 group overflow-hidden ${
+              className={`relative border-2 border-dashed rounded-2xl md:rounded-3xl p-6 md:p-10 text-center cursor-pointer transition-all duration-300 group overflow-hidden ${
                 photo ? 'border-brand-500 bg-brand-500/5' : 'border-white/10 bg-white/2 hover:border-brand-500/50 hover:bg-white/5'
               }`}
               onClick={() => fileInputRef.current?.click()}
@@ -355,28 +355,28 @@ export default function CandidateRegistrationForm({ positions }: Props) {
                   <div className="relative">
                     <div className="absolute inset-0 bg-brand-500/20 blur-xl rounded-full scale-110"></div>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={URL.createObjectURL(photo)} alt="Preview" className="relative w-32 h-32 object-cover rounded-3xl border-4 border-brand-500 shadow-2xl" />
+                    <img src={URL.createObjectURL(photo)} alt="Preview" className="relative w-24 h-24 md:w-32 md:h-32 object-cover rounded-2xl md:rounded-3xl border-4 border-brand-500 shadow-2xl" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-white tracking-tight">{photo.name}</p>
-                    <p className="text-xs text-brand-400 font-medium mt-1">Ready for upload • Click to change</p>
+                    <p className="text-xs md:text-sm font-bold text-white tracking-tight">{photo.name}</p>
+                    <p className="text-[10px] md:text-xs text-brand-400 font-medium mt-1">Ready for upload • Click to change</p>
                   </div>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  <div className="mx-auto w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center text-slate-400 group-hover:text-brand-400 group-hover:scale-110 transition-all duration-300">
-                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                <div className="space-y-3 md:space-y-4">
+                  <div className="mx-auto w-12 h-12 md:w-16 md:h-16 bg-white/5 rounded-xl md:rounded-2xl flex items-center justify-center text-slate-400 group-hover:text-brand-400 group-hover:scale-110 transition-all duration-300">
+                    <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-base text-white font-bold tracking-tight">Upload Candidate Photo</p>
-                    <p className="text-xs text-slate-500 font-medium px-8">High-resolution JPEG or PNG. Professional attire recommended for ballot visibility.</p>
+                    <p className="text-sm md:text-base text-white font-bold tracking-tight">Upload Candidate Photo</p>
+                    <p className="text-[10px] md:text-xs text-slate-500 font-medium px-4 md:px-8">High-resolution JPEG or PNG. Professional attire recommended.</p>
                   </div>
                 </div>
               )}
             </div>
           </div>
 
-          <Button type="submit" loading={loading} className="w-full bg-brand-600 hover:bg-brand-500 py-5 text-lg font-black tracking-widest uppercase shadow-2xl shadow-brand-900/40" size="lg">
+          <Button type="submit" loading={loading} className="w-full bg-brand-600 hover:bg-brand-500 py-4 md:py-5 text-base md:text-lg font-black tracking-widest uppercase shadow-2xl shadow-brand-900/40" size="lg">
             Complete Registration
           </Button>
         </form>
@@ -401,14 +401,14 @@ export default function CandidateRegistrationForm({ positions }: Props) {
             </p>
           </div>
 
-          <div className="max-w-md mx-auto p-6 rounded-3xl bg-white/2 border border-white/5 space-y-4">
-            <p className="text-sm text-slate-400 leading-relaxed font-medium">
+          <div className="max-w-md mx-auto p-5 md:p-6 rounded-2xl md:rounded-3xl bg-white/2 border border-white/5 space-y-4">
+            <p className="text-xs md:text-sm text-slate-400 leading-relaxed font-medium">
               The Independent Electoral Commission (IEC) will now verify your details. You will be notified via SMS at <span className="text-white font-bold">{phone}</span> once a decision is made.
             </p>
-            <div className="h-px bg-white/5 w-1/2 mx-auto"></div>
+            <div className="h-px bg-white/5 w-1/3 mx-auto"></div>
             <div className="flex justify-center gap-4">
               <div className="flex flex-col items-center">
-                <span className="text-[10px] text-slate-500 font-black uppercase tracking-tighter">Status</span>
+                <span className="text-[9px] md:text-[10px] text-slate-500 font-black uppercase tracking-tighter">Status</span>
                 <span className="text-xs text-brand-400 font-bold">PENDING REVIEW</span>
               </div>
             </div>

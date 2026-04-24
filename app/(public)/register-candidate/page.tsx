@@ -24,17 +24,17 @@ export default async function RegisterCandidatePage() {
 
   return (
     <PublicShell>
-      <div className="w-full max-w-4xl mx-auto py-12 px-4 sm:px-6">
+      <div className="w-full max-w-4xl mx-auto py-8 md:py-12 px-4 sm:px-6">
         {/* Premium Hero Section */}
-        <section className="mb-12 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent-500/10 border border-accent-500/20 mb-4">
-            <span className="flex h-2 w-2 rounded-full bg-accent-500 animate-pulse"></span>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-accent-400">Candidate Portal</p>
+        <section className="mb-8 md:mb-12 text-center">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent-500/10 border border-accent-500/20 mb-3 md:mb-4">
+            <span className="flex h-1.5 w-1.5 rounded-full bg-accent-500 animate-pulse"></span>
+            <p className="text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] text-accent-400">Candidate Portal</p>
           </div>
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 font-[family-name:var(--font-outfit)] tracking-tight">
+          <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-4 md:mb-6 font-[family-name:var(--font-outfit)] tracking-tight">
             Run for <span className="text-brand-500">Office</span>
           </h1>
-          <p className="text-lg text-slate-400 max-w-2xl mx-auto font-medium">
+          <p className="text-base md:text-lg text-slate-400 max-w-2xl mx-auto font-medium px-2">
             Join the leadership of the Equity Leaders Program Moi Chapter. Submit your application below to appear on the official ballot.
           </p>
         </section>
