@@ -25,6 +25,21 @@ export async function POST(req: NextRequest) {
       return error("Invalid Kenyan phone number format.", 400);
     }
 
+    // Check Candidate Registration Window
+    const config = await prisma.votingConfig.findUnique({ where: { id: 1 } });
+    if (config) {
+      const now = new Date();
+      if (config.isManuallyClosed) {
+        return error("Candidate registration is currently suspended by the IEC.", 403);
+      }
+      if (config.candidateRegOpensAt && now < config.candidateRegOpensAt) {
+        return error("Candidate registration has not opened yet.", 403);
+      }
+      if (config.candidateRegClosesAt && now > config.candidateRegClosesAt) {
+        return error("Candidate registration has officially closed.", 403);
+      }
+    }
+
     // 1. Check if number exists in voters registry
     const voter = await prisma.voter.findUnique({
       where: { phone: normalizedPhone },

@@ -140,10 +140,26 @@ export default function AdminConfigPage() {
               <form onSubmit={handleSave} className="space-y-6">
                 
                 <div>
-                  <h2 className="text-lg font-bold text-white border-b border-glass-border pb-2 mb-4">Candidate Registration Window</h2>
+                  <div className="flex items-center justify-between border-b border-glass-border pb-2 mb-4">
+                    <h2 className="text-lg font-bold text-white">Candidate Registration Window</h2>
+                    <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-accent-500/10 border border-accent-500/20">
+                      <span className="w-2 h-2 rounded-full bg-accent-500 animate-pulse"></span>
+                      <span className="text-[10px] font-bold text-accent-400 uppercase tracking-widest">Phase 1</span>
+                    </div>
+                  </div>
+                  
+                  <div className="mb-6 p-4 rounded-xl bg-blue-500/5 border border-blue-500/20 text-blue-300 text-xs flex items-start gap-3">
+                    <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                    </svg>
+                    <p className="leading-relaxed">
+                      <strong>Requirement:</strong> Registration MUST close before the Voting window begins. These two phases are distinct and cannot overlap.
+                    </p>
+                  </div>
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <label className="block text-sm font-medium text-slate-300">Opens At (Optional)</label>
+                      <label className="block text-sm font-medium text-slate-300">Registration Opens</label>
                       <input 
                         type="datetime-local" 
                         value={regOpensAt}
@@ -152,7 +168,7 @@ export default function AdminConfigPage() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="block text-sm font-medium text-slate-300">Closes At (Optional)</label>
+                      <label className="block text-sm font-medium text-slate-300">Registration Closes</label>
                       <input 
                         type="datetime-local" 
                         value={regClosesAt}
@@ -161,7 +177,7 @@ export default function AdminConfigPage() {
                       />
                     </div>
                   </div>
-                  <p className="text-xs text-slate-500 mt-2">If left blank, candidate registration will always be open.</p>
+                  <p className="text-xs text-slate-500 mt-2 italic">If left blank, candidate registration will follow the default system rules.</p>
                 </div>
 
                 <div>

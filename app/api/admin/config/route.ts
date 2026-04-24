@@ -52,6 +52,26 @@ export async function PATCH(req: NextRequest) {
     const data = result.data;
     const adminId = auth.admin.id;
 
+    // Validate non-overlap: Registration must end before Voting starts
+    if (data.candidateRegOpensAt && data.candidateRegClosesAt) {
+      const regOpen = new Date(data.candidateRegOpensAt);
+      const regClose = new Date(data.candidateRegClosesAt);
+      const voteOpen = new Date(data.opensAt);
+      const voteClose = new Date(data.closesAt);
+
+      if (regClose > voteOpen) {
+        return error("Registration window cannot overlap with the voting window. Registration must close before voting opens.", 400);
+      }
+      
+      if (regOpen >= regClose) {
+        return error("Registration opening date must be before the closing date.", 400);
+      }
+    }
+
+    if (new Date(data.opensAt) >= new Date(data.closesAt)) {
+      return error("Voting opening date must be before the closing date.", 400);
+    }
+
     const oldConfig = await prisma.votingConfig.findUnique({ where: { id: 1 } });
 
     const config = await prisma.votingConfig.upsert({
