@@ -9,6 +9,7 @@ import Button from '@/components/ui/Button';
 import Link from 'next/link';
 import { getElectionPhase, type PhaseInfo } from '@/lib/phases';
 import type { ResultsPayload } from '@/lib/results';
+import EmailRegistrationCard from '@/components/voter/EmailRegistrationCard';
 
 export default function Home() {
   const [resultsData, setResultsData] = useState<ResultsPayload | null>(null);
@@ -87,56 +88,46 @@ export default function Home() {
         )}
 
         {isRegistrationPhase ? (
-          /* REGISTRATION INTERFACE */
-          <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center slide-up">
-            <div className="space-y-8">
+          /* VOTER REGISTRATION INTERFACE */
+          <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-start slide-up">
+            <div className="lg:col-span-5 space-y-8">
               <div className="space-y-4">
                 <h1 className="text-4xl md:text-6xl font-black text-white leading-tight">
-                  Lead the <br />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-400 to-accent-600">Next Generation</span>
+                  Secure Your <br />
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-400 to-accent-600">Voice</span>
                 </h1>
                 <p className="text-lg text-slate-400 font-medium leading-relaxed">
-                  The candidate registration portal is now active. If you are a registered ELP Moi Chapter scholar, you are eligible to run for office.
+                  Voter registration is mandatory for the ELP Moi Chapter elections. Link your verified email address now to receive your secure OTP on election day.
                 </p>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/register-candidate" className="flex-1">
-                  <Button className="w-full h-16 text-lg font-black bg-accent-600 hover:bg-accent-500 shadow-xl shadow-accent-900/20">
-                    Apply for Candidacy
-                  </Button>
-                </Link>
-                <Link href="/results" className="flex-1">
-                  <Button variant="outline" className="w-full h-16 text-lg font-black border-white/10 hover:bg-white/5">
-                    View Positions
-                  </Button>
-                </Link>
+              <div className="flex flex-col gap-6">
+                <div className="p-6 rounded-3xl bg-white/5 border border-white/10 space-y-4">
+                  <h3 className="text-sm font-black uppercase tracking-widest text-slate-500">Candidate Information</h3>
+                  <p className="text-sm text-slate-400">Are you planning to run for a leadership position?</p>
+                  <Link href="/register-candidate">
+                    <Button variant="outline" className="w-full border-accent-500/20 text-accent-400 hover:bg-accent-500/10 font-bold">
+                      Run for Office (Candidate Registration)
+                    </Button>
+                  </Link>
+                </div>
               </div>
             </div>
 
-            <div className="relative group">
-              <div className="absolute inset-0 bg-accent-500/10 blur-[100px] rounded-full" />
-              <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 overflow-hidden">
-                <div className="absolute top-0 right-0 p-8">
-                  <svg className="w-24 h-24 text-white/5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+            <div className="lg:col-span-7 fade-in">
+              {phaseInfo?.phase === 'REGISTRATION_OPEN' ? (
+                <EmailRegistrationCard />
+              ) : (
+                <div className="p-12 rounded-[2.5rem] bg-white/5 border border-white/10 text-center space-y-6">
+                   <div className="w-16 h-16 bg-slate-500/10 rounded-2xl flex items-center justify-center mx-auto text-slate-500">
+                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                  </div>
+                  <h3 className="text-xl font-bold text-white">Portal Opening Soon</h3>
+                  <p className="text-sm text-slate-400 leading-relaxed max-w-sm mx-auto">
+                    The voter registration portal will be activated once the countdown reaches zero. Ensure you have your phone ready.
+                  </p>
                 </div>
-                <h3 className="text-xl font-bold text-white mb-4">Requirements</h3>
-                <ul className="space-y-4">
-                  {[
-                    'Must be a pre-registered scholar',
-                    'Verified phone & email required',
-                    'Digital passport photo for ballot',
-                    'Current scholar code (PF Number)'
-                  ].map((req, i) => (
-                    <li key={i} className="flex items-center gap-3 text-slate-300">
-                      <div className="w-5 h-5 rounded-full bg-accent-500/20 flex items-center justify-center">
-                        <svg className="w-3 h-3 text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
-                      </div>
-                      <span className="text-sm font-medium">{req}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              )}
             </div>
           </div>
         ) : (

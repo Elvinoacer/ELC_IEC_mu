@@ -26,6 +26,21 @@ export async function POST(req: NextRequest) {
     const normalizedPhone = normalizePhone(result.data.phone);
     if (!normalizedPhone) return error('Invalid phone number format.', 400);
 
+    // Guard: Registration Window
+    const config = await prisma.votingConfig.findUnique({ where: { id: 1 } });
+    if (config) {
+      const now = new Date();
+      if (config.isManuallyClosed) {
+        return error('Voter registration is currently suspended by the IEC.', 403);
+      }
+      if (config.candidateRegOpensAt && now < config.candidateRegOpensAt) {
+        return error('Voter registration has not opened yet.', 403);
+      }
+      if (config.candidateRegClosesAt && now > config.candidateRegClosesAt) {
+        return error('Voter registration has officially closed.', 403);
+      }
+    }
+
     // 1. Look up voter by phone
     const voter = await prisma.voter.findUnique({ where: { phone: normalizedPhone } });
     if (!voter) return error('This phone number is not registered in the ELP voter registry.', 404);
