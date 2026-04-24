@@ -18,7 +18,12 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 // Singleton Pool for connection reuse
-const pool = globalForPrisma.pool ?? new Pool({ connectionString });
+const pool = globalForPrisma.pool ?? new Pool({ 
+  connectionString,
+  max: 75, // Increase from default 10 to handle sudden spikes
+  idleTimeoutMillis: 30000, // Close idle connections after 30 seconds
+  connectionTimeoutMillis: 5000, // Return an error after 5 seconds if no connection is available
+});
 if (process.env.NODE_ENV !== 'production') globalForPrisma.pool = pool;
 
 const adapter = new PrismaPg(pool);
