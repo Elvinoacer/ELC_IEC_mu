@@ -133,39 +133,76 @@ export default function DetailedResults({ initialData, hasAlreadyVoted = false }
       </div>
 
       {/* Live Results Bento Grid */}
-      <div className="grid grid-cols-1 min-[560px]:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
+      <div className="grid grid-cols-1 min-[400px]:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
         {positions.map((position) => (
-          <div key={position.id} className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden flex flex-col shadow-2xl transition-all hover:border-white/20">
-            <div className="p-6 border-b border-white/5 bg-white/5">
-              <h2 className="text-xl font-bold text-white">{position.title}</h2>
-              <p className="text-[10px] text-slate-500 font-bold uppercase mt-1 tracking-widest">
-                {position.totalVotes} Total Votes
-              </p>
+          <div key={position.id} className="group/card bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2rem] overflow-hidden flex flex-col shadow-2xl transition-all duration-500 hover:border-brand-500/30 hover:bg-white/[0.07]">
+            <div className="p-5 md:p-6 border-b border-white/5 bg-gradient-to-br from-white/5 to-transparent relative overflow-hidden">
+              <div className="absolute -right-4 -top-4 w-24 h-24 bg-brand-500/5 rounded-full blur-2xl group-hover/card:bg-brand-500/10 transition-colors" />
+              <h2 className="text-lg md:text-xl font-black text-white tracking-tight">{position.title}</h2>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="flex h-1.5 w-1.5 rounded-full bg-brand-500 animate-pulse" />
+                <p className="text-[9px] md:text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">
+                  {position.totalVotes} Total Cast
+                </p>
+              </div>
             </div>
-            <div className="p-6 space-y-6 flex-grow">
+            
+            <div className="p-4 md:p-6 space-y-5 flex-grow">
               {position.candidates.map((candidate, idx) => (
-                <div key={candidate.id} className="space-y-2 group">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full overflow-hidden bg-slate-800 border border-white/10">
+                <div key={candidate.id} className="relative space-y-3 group/item">
+                  <div className="flex items-center gap-3 md:gap-4">
+                    <div className="relative shrink-0">
+                      <div className={`absolute inset-0 bg-brand-500/20 blur-lg rounded-full opacity-0 transition-opacity duration-500 ${idx === 0 ? 'opacity-40' : ''}`} />
+                      <div className={`w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl overflow-hidden bg-slate-800 border-2 transition-transform duration-500 group-hover/item:scale-105 ${
+                        idx === 0 ? 'border-brand-500 shadow-[0_0_15px_rgba(163,42,41,0.3)]' : 'border-white/10'
+                      }`}>
                         <img 
                           src={candidate.photoUrl} 
                           alt={candidate.name} 
                           className="w-full h-full object-cover"
                         />
                       </div>
-                      <span className="font-bold text-white text-sm group-hover:text-brand-400 transition-colors">{candidate.name}</span>
+                      {idx === 0 && (
+                        <div className="absolute -top-1.5 -right-1.5 bg-brand-600 text-[8px] font-black px-1.5 py-0.5 rounded-full text-white border border-white/20 shadow-lg">
+                          LEADER
+                        </div>
+                      )}
                     </div>
-                    <span className="text-brand-400 font-black text-sm">{candidate.votes} Votes</span>
-                  </div>
-                  <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full bg-gradient-to-r from-brand-600 to-brand-400 transition-all duration-1000 ease-out ${idx === 0 ? 'shadow-[0_0_15px_rgba(163,42,41,0.4)]' : ''}`} 
-                      style={{ width: `${Math.max(candidate.percentage, 1)}%` }}
-                    ></div>
+                    
+                    <div className="flex-grow min-w-0">
+                      <div className="flex justify-between items-end mb-1.5">
+                        <span className="font-black text-white text-xs md:text-sm truncate pr-2 tracking-tight group-hover/item:text-brand-400 transition-colors">
+                          {candidate.name.split(' ')[0]} {candidate.name.split(' ')[1]?.[0]}.
+                        </span>
+                        <div className="text-right shrink-0">
+                          <span className="text-brand-400 font-black text-sm md:text-base block leading-none">{candidate.votes}</span>
+                          <span className="text-[7px] md:text-[8px] text-slate-500 font-bold uppercase tracking-tighter">Votes</span>
+                        </div>
+                      </div>
+                      
+                      <div className="h-1.5 md:h-2 w-full bg-white/5 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full bg-gradient-to-r from-brand-700 to-brand-500 transition-all duration-1000 ease-out relative ${
+                            idx === 0 ? 'after:absolute after:inset-0 after:bg-white/20 after:animate-shimmer' : ''
+                          }`} 
+                          style={{ width: `${Math.max(candidate.percentage, 1)}%` }}
+                        ></div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}
+            </div>
+            
+            <div className="px-5 py-3 md:px-6 md:py-4 bg-white/2 border-t border-white/5 flex justify-between items-center">
+              <span className="text-[8px] md:text-[9px] font-black text-slate-500 uppercase tracking-widest">Live Updates Active</span>
+              <div className="flex -space-x-2">
+                {position.candidates.slice(0, 3).map((c, i) => (
+                  <div key={i} className="w-4 h-4 md:w-5 md:h-5 rounded-full border border-surface-950 overflow-hidden bg-slate-800">
+                    <img src={c.photoUrl} alt="" className="w-full h-full object-cover opacity-50" />
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         ))}
