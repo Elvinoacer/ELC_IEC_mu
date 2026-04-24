@@ -6,6 +6,7 @@ import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import CustomSelect from '@/components/ui/Select';
 import SmartPhoneInput from '@/components/ui/PhoneInput';
+import Link from 'next/link';
 
 interface Position {
   id: number;
@@ -187,13 +188,23 @@ export default function CandidateRegistrationForm({ positions }: Props) {
       )}
 
       {error && (
-        <div className="mb-8 p-5 rounded-2xl bg-error-500/10 border border-error-500/20 flex items-start gap-4 animate-shake">
-          <div className="bg-error-500/20 p-2 rounded-lg">
-            <svg className="w-5 h-5 text-error-400 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
+        <div className="mb-8 p-5 rounded-2xl bg-error-500/10 border border-error-500/20 flex flex-col md:flex-row items-start md:items-center gap-4 animate-shake">
+          <div className="flex items-start gap-4 flex-1">
+            <div className="bg-error-500/20 p-2 rounded-lg shrink-0">
+              <svg className="w-5 h-5 text-error-400" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <p className="text-sm font-medium text-error-300 leading-relaxed">{error}</p>
           </div>
-          <p className="text-sm font-medium text-error-300 leading-relaxed">{error}</p>
+          
+          {error.includes('No verified email') && (
+            <Link href="/" className="w-full md:w-auto shrink-0">
+              <Button size="sm" variant="outline" className="w-full border-error-500/30 text-error-400 hover:bg-error-500/10 py-2.5 text-xs font-bold">
+                Secure Your Account Now
+              </Button>
+            </Link>
+          )}
         </div>
       )}
 
