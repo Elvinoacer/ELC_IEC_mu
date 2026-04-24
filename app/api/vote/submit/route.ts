@@ -6,7 +6,7 @@ import { verifyVoterToken } from '@/lib/jwt';
 import { generateResultsPayload } from '@/lib/results';
 import { logVoteAttempt } from '@/lib/audit';
 
-import { trySendSMS, SMS_TEMPLATES } from '@/lib/sms';
+import { tryEmailSend, templateVoteConfirmation } from '@/lib/email';
 
 const submitSchema = z.object({
   deviceHash: z.string().min(1, 'Device fingerprint missing'),
@@ -140,9 +140,13 @@ export async function POST(req: NextRequest) {
       console.error('Failed to trigger socket.io broadcast:', e);
     }
 
-    // 5. Send Vote Confirmation SMS (non-blocking — never throws)
+    // 5. Send Vote Confirmation Email (non-blocking — never throws)
     if (phone) {
-      await trySendSMS(phone, SMS_TEMPLATES.voteConfirmation());
+      const voter = await prisma.voter.findUnique({ where: { phone }, select: { email: true, emailVerified: true } });
+      if (voter?.email && voter.emailVerified) {
+        const { subject, html } = templateVoteConfirmation();
+        await tryEmailSend(voter.email, subject, html);
+      }
     }
 
     const res = success({ message: 'Vote submitted successfully' });

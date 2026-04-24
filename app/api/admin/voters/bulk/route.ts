@@ -10,6 +10,7 @@ const bulkVoterSchema = z.array(
   z.object({
     phone: z.string(),
     name: z.string().optional().nullable(),
+    email: z.string().optional().nullable(),
   }),
 );
 
@@ -43,9 +44,14 @@ export async function POST(req: NextRequest) {
     const validVotersToInsert: {
       phone: string;
       name?: string | null;
+      email?: string | null;
+      emailVerified?: boolean;
       addedById: number | null;
     }[] = [];
     const seenPhonesInBatch = new Set<string>();
+
+    // Simple email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     for (const row of rows) {
       const normalized = normalizePhone(row.phone);
@@ -61,9 +67,21 @@ export async function POST(req: NextRequest) {
       }
       seenPhonesInBatch.add(normalized);
 
+      // Validate email if provided
+      let validEmail: string | null = null;
+      if (row.email && typeof row.email === 'string' && row.email.trim()) {
+        const trimmedEmail = row.email.trim();
+        if (emailRegex.test(trimmedEmail)) {
+          validEmail = trimmedEmail;
+        }
+        // If email is invalid, we still add the voter but without email
+      }
+
       validVotersToInsert.push({
         phone: normalized,
         name: row.name,
+        email: validEmail,
+        emailVerified: false, // Voters must self-verify via Phase A
         addedById: adminId,
       });
     }

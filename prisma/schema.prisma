@@ -33,14 +33,16 @@ model Admin {
 // ─── Voter ──────────────────────────────────────────────────────────────────────
 
 model Voter {
-  id         Int       @id @default(autoincrement())
-  phone      String    @unique @db.VarChar(20) // E.164: +2547XXXXXXXX
-  name       String?   @db.VarChar(100)
-  hasVoted   Boolean   @default(false) @map("has_voted")
-  votedAt    DateTime? @map("voted_at") @db.Timestamptz
-  deviceHash String?   @map("device_hash") @db.VarChar(64)
-  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  addedById  Int?      @map("added_by")
+  id            Int       @id @default(autoincrement())
+  phone         String    @unique @db.VarChar(20) // E.164: +2547XXXXXXXX
+  name          String?   @db.VarChar(100)
+  email         String?   @unique @db.VarChar(255) // Linked email for OTP delivery
+  emailVerified Boolean   @default(false) @map("email_verified")
+  hasVoted      Boolean   @default(false) @map("has_voted")
+  votedAt       DateTime? @map("voted_at") @db.Timestamptz
+  deviceHash    String?   @map("device_hash") @db.VarChar(64)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  addedById     Int?      @map("added_by")
 
   // Relations
   addedBy   Admin?     @relation("AddedByAdmin", fields: [addedById], references: [id])
@@ -52,6 +54,8 @@ model Voter {
   @@index([votedAt])
   @@index([createdAt])
   @@index([name])
+  @@index([email])
+  @@index([emailVerified])
   @@map("voters")
 }
 
@@ -127,16 +131,20 @@ model Vote {
 
 model OtpRequest {
   id        Int      @id @default(autoincrement())
-  phone     String   @db.VarChar(20)
+  phone     String?  @db.VarChar(20)    // Null for email-registration OTPs
+  email     String?  @db.VarChar(255)   // Null for vote-day OTPs
   code      String   @db.VarChar(10)
   sentAt    DateTime @default(now()) @map("sent_at") @db.Timestamptz
   verified  Boolean  @default(false)
   expiresAt DateTime @map("expires_at") @db.Timestamptz
   attempts  Int      @default(0) // Track incorrect attempts
   ipAddress String?  @map("ip_address") @db.VarChar(45)
+  purpose   String   @default("VOTE") @db.VarChar(30) // "VOTE" | "EMAIL_REG"
 
   @@index([phone, sentAt])
   @@index([phone, verified, expiresAt])
+  @@index([email, sentAt])
+  @@index([email, verified, expiresAt])
   @@index([expiresAt])
   @@map("otp_requests")
 }
@@ -160,7 +168,27 @@ model VotingConfig {
   @@map("voting_config")
 }
 
-// ─── SMS Log ───────────────────────────────────────────────────────────────────
+// ─── Email Log ──────────────────────────────────────────────────────────────────
+
+model EmailLog {
+  id            Int      @id @default(autoincrement())
+  to            String   @db.VarChar(255)
+  subject       String   @db.VarChar(255)
+  resendId      String?  @unique @map("resend_id") @db.VarChar(100)
+  status        String   @default("PENDING") @db.VarChar(50) // PENDING | SENT | FAILED | SIMULATED
+  failureReason String?  @map("failure_reason") @db.Text
+  sentAt        DateTime @default(now()) @map("sent_at") @db.Timestamptz
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@index([to])
+  @@index([resendId])
+  @@index([status])
+  @@index([sentAt])
+  @@map("email_logs")
+}
+
+// ─── SMS Log (DEPRECATED — replaced by EmailLog) ───────────────────────────────
+// @deprecated This model is retained for historical data. New messages use EmailLog.
 
 model SmsLog {
   id            Int      @id @default(autoincrement())

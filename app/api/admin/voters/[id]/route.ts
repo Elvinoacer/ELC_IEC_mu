@@ -66,19 +66,47 @@ export async function PATCH(
 
     if (action === "edit") {
       const normalizedName = typeof name === "string" ? name.trim() : "";
+      const emailValue = typeof body.email === "string" ? body.email.trim() : undefined;
+
+      const updateData: any = { name: normalizedName || null };
+
+      // If email is being changed, reset emailVerified
+      if (emailValue !== undefined) {
+        if (emailValue === "") {
+          updateData.email = null;
+          updateData.emailVerified = false;
+        } else {
+          // Check email not taken by another voter
+          const emailTaken = await prisma.voter.findFirst({
+            where: { email: emailValue, id: { not: voterId } },
+          });
+          if (emailTaken) {
+            return error("This email is already linked to another voter.", 409);
+          }
+          updateData.email = emailValue;
+          updateData.emailVerified = false;
+        }
+      }
 
       await prisma.voter.update({
         where: { id: voterId },
-        data: { name: normalizedName || null },
+        data: updateData,
       });
 
-      await logAudit(req, auth.admin.id, "EDIT_VOTER", "Voter", voterId, {
+      const auditDetails: any = {
         phone: voter.phone,
         oldName: voter.name,
         newName: normalizedName || null,
-      });
+      };
+      if (emailValue !== undefined) {
+        auditDetails.oldEmail = voter.email;
+        auditDetails.newEmail = emailValue || null;
+        auditDetails.emailVerifiedReset = true;
+      }
 
-      return success({ message: "Voter name updated" });
+      await logAudit(req, auth.admin.id, emailValue !== undefined ? "ADMIN_UPDATE_VOTER_EMAIL" : "EDIT_VOTER", "Voter", voterId, auditDetails);
+
+      return success({ message: "Voter updated" });
     }
 
     if (action === "reset") {

@@ -101,7 +101,7 @@ export default function VoterImportModal({ isOpen, onClose, onSuccess }: VoterIm
           ) : (
             <>
               <p className="text-sm text-slate-400">
-                Upload a CSV file with <code className="bg-surface-900 px-1 py-0.5 rounded">phone</code> and <code className="bg-surface-900 px-1 py-0.5 rounded">name</code> (optional) columns.
+                Upload a CSV file with <code className="bg-surface-900 px-1 py-0.5 rounded">phone</code>, <code className="bg-surface-900 px-1 py-0.5 rounded">name</code> (optional), and <code className="bg-surface-900 px-1 py-0.5 rounded">email</code> (optional) columns.
               </p>
 
               <div 

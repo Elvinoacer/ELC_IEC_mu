@@ -16,11 +16,13 @@ export default function AuthCard({ onAlreadyVoted }: { onAlreadyVoted?: () => vo
   const [step, setStep] = useState<Step>('PHONE');
   const [localPhone, setLocalPhone] = useState('');
   const [normalizedPhone, setNormalizedPhone] = useState('');
+  const [maskedEmail, setMaskedEmail] = useState<string | null>(null);
   const [otp, setOtp] = useState<string[]>(Array(6).fill(''));
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const [cooldownSeconds, setCooldownSeconds] = useState(60);
   const [attemptsLeft, setAttemptsLeft] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [noEmailError, setNoEmailError] = useState(false);
   const [loading, setLoading] = useState(false);
   const [fingerprint, setFingerprint] = useState('');
   const [alreadyVotedMessage, setAlreadyVotedMessage] = useState('');
@@ -78,6 +80,7 @@ export default function AuthCard({ onAlreadyVoted }: { onAlreadyVoted?: () => vo
     setLoading(true);
     setError(null);
     setAlreadyVotedMessage('');
+    setNoEmailError(false);
 
     const res = await fetch('/api/vote/auth/request-otp', {
       method: 'POST',
@@ -93,6 +96,12 @@ export default function AuthCard({ onAlreadyVoted }: { onAlreadyVoted?: () => vo
         setLoading(false);
         return;
       }
+      if (res.status === 403 && json.error?.includes('verified email')) {
+        setNoEmailError(true);
+        setError(null);
+        setLoading(false);
+        return;
+      }
       setError(json.error || 'Could not send OTP.');
       setLoading(false);
       return;
@@ -101,6 +110,7 @@ export default function AuthCard({ onAlreadyVoted }: { onAlreadyVoted?: () => vo
     const data = json.data;
     setStep('OTP');
     setNormalizedPhone(parsed);
+    setMaskedEmail(data.maskedEmail || null);
     setExpiresAt(data.expiresAt);
     setCooldownSeconds(data.cooldownSeconds ?? 60);
     setOtp(Array(6).fill(''));
@@ -147,6 +157,26 @@ export default function AuthCard({ onAlreadyVoted }: { onAlreadyVoted?: () => vo
       {alreadyVotedMessage && <p className="mb-4 rounded-lg border border-brand-500/20 bg-brand-500/10 p-3 text-sm text-brand-200">{alreadyVotedMessage}</p>}
       {error && <p className="mb-4 rounded-lg border border-error-500/30 bg-error-500/10 p-3 text-sm text-error-300">{error}</p>}
 
+      {noEmailError && (
+        <div className="mb-4 rounded-lg border border-warning-500/30 bg-warning-500/10 p-4">
+          <p className="text-sm text-warning-300 font-medium mb-2">
+            Your account does not have a verified email on file.
+          </p>
+          <p className="text-xs text-slate-400 mb-3">
+            Before voting, you need to register your email address to receive your OTP.
+          </p>
+          <a
+            href="/register-email"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-accent-400 hover:text-accent-300 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+            </svg>
+            Register your email now →
+          </a>
+        </div>
+      )}
+
       {step === 'PHONE' ? (
         <div className="space-y-4">
           <PhoneInput value={localPhone} onChange={setLocalPhone} disabled={loading} autoFocus />
@@ -155,7 +185,12 @@ export default function AuthCard({ onAlreadyVoted }: { onAlreadyVoted?: () => vo
       ) : (
         <div className="space-y-4">
           <div>
-            <p className="text-sm text-slate-300">Code sent to <span className="font-semibold text-white">{normalizedPhone}</span></p>
+            <p className="text-sm text-slate-300">
+              Code sent to{' '}
+              <span className="font-semibold text-white">
+                {maskedEmail || normalizedPhone}
+              </span>
+            </p>
             <button className="mt-1 text-xs text-brand-400 hover:text-brand-300" onClick={() => setStep('PHONE')} type="button">Change number</button>
           </div>
           <OtpInput value={otp} onChange={setOtp} onComplete={verifyOtp} disabled={loading} />

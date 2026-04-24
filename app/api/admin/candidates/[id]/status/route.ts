@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { success, error, serverError } from "@/lib/response";
-import { trySendSMS, SMS_TEMPLATES } from "@/lib/sms";
+import { tryEmailSend, templateCandidateApproved, templateCandidateRejected } from "@/lib/email";
 import { requireAdminSession } from "@/lib/admin-auth";
 import { logAudit } from "@/lib/audit";
 
@@ -81,25 +81,30 @@ export async function PATCH(
       },
     );
 
-    // 3. Send notification SMS (non-blocking — uses trySendSMS which never throws)
-    let smsSent = false;
-    if (status === "APPROVED") {
-      smsSent = await trySendSMS(
-        candidate.phone,
-        SMS_TEMPLATES.candidateApproved(candidate.position),
-      );
-    } else if (status === "REJECTED") {
-      smsSent = await trySendSMS(
-        candidate.phone,
-        SMS_TEMPLATES.candidateRejected(candidate.position, rejectionNote!),
-      );
+    // 3. Send notification email (non-blocking)
+    let emailSent = false;
+    // Look up the voter's verified email via phone
+    const voter = await prisma.voter.findUnique({
+      where: { phone: candidate.phone },
+      select: { email: true, emailVerified: true },
+    });
+
+    if (voter?.email && voter.emailVerified) {
+      if (status === "APPROVED") {
+        const { subject, html } = templateCandidateApproved(candidate.position);
+        emailSent = await tryEmailSend(voter.email, subject, html);
+      } else if (status === "REJECTED") {
+        const { subject, html } = templateCandidateRejected(candidate.position, rejectionNote!);
+        emailSent = await tryEmailSend(voter.email, subject, html);
+      }
     }
-    const smsWarning = smsSent ? null : "Candidate status was updated, but SMS delivery failed.";
+
+    const emailWarning = emailSent ? null : "Candidate status was updated, but email notification could not be delivered.";
 
     return success({
       message: `Candidate ${status.toLowerCase()} successfully`,
       candidate: updated,
-      smsWarning,
+      emailWarning,
     });
   } catch (err) {
     return serverError(err);

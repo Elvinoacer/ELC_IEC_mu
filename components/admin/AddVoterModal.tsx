@@ -13,6 +13,7 @@ interface AddVoterModalProps {
 export default function AddVoterModal({ isOpen, onClose, onSuccess }: AddVoterModalProps) {
   const [phone, setPhone] = useState('');
   const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,7 +28,7 @@ export default function AddVoterModal({ isOpen, onClose, onSuccess }: AddVoterMo
       const res = await fetch('/api/admin/voters', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, name }),
+        body: JSON.stringify({ phone, name, email: email || null }),
       });
 
       const data = await res.json();
@@ -36,6 +37,7 @@ export default function AddVoterModal({ isOpen, onClose, onSuccess }: AddVoterMo
       onSuccess();
       setPhone('');
       setName('');
+      setEmail('');
       onClose();
     } catch (err: any) {
       setError(err.message);
@@ -75,6 +77,15 @@ export default function AddVoterModal({ isOpen, onClose, onSuccess }: AddVoterMo
             placeholder="Jane Doe"
             value={name}
             onChange={(e) => setName(e.target.value)}
+          />
+
+          <Input
+            label="Email (Optional)"
+            type="email"
+            placeholder="voter@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            hint="If provided, voter will still need to self-verify before election day."
           />
 
           <div className="flex justify-end gap-3 pt-4">

@@ -1,5 +1,9 @@
 /**
- * Africa's Talking SMS Integration
+ * @deprecated This module is deprecated. Use lib/email.ts (Resend) instead.
+ * Retained for backward compatibility during the SMS→Email migration.
+ * Do not add new usages of this module.
+ *
+ * Africa's Talking SMS Integration (DEPRECATED)
  * 
  * Key design decisions:
  * - Fail-fast: throws at import time if AT credentials are missing in production
@@ -170,24 +174,34 @@ export async function sendSMS(to: string, message: string): Promise<void> {
       // Check status code
       const statusCode = Number(recipient.statusCode);
       const status = recipient.status || 'Unknown';
-      const messageId = recipient.messageId || null;
       const cost = recipient.cost || 'N/A';
+
+      // Normalize messageId — AT returns literal "None" string on rejection
+      const rawMessageId = recipient.messageId;
+      const messageId = (rawMessageId && rawMessageId !== 'None' && rawMessageId !== 'none')
+        ? rawMessageId
+        : null;
 
       if (!AT_SUCCESS_CODES.has(statusCode)) {
         // AT explicitly rejected this message
         const rejectMsg = `AT rejected SMS: statusCode=${statusCode}, status=${status}, number=${recipient.number}, cost=${cost}`;
         console.error(`[SMS] ${rejectMsg}`);
 
-        await prisma.smsLog.update({
-          where: { id: log.id },
-          data: {
-            messageId: messageId?.toString() || null,
-            status: 'REJECTED',
-            failureReason: rejectMsg,
-          }
-        });
+        // Update DB log — but don't let a DB error mask the AT rejection
+        try {
+          await prisma.smsLog.update({
+            where: { id: log.id },
+            data: {
+              messageId,
+              status: 'REJECTED',
+              failureReason: rejectMsg,
+            }
+          });
+        } catch (dbErr) {
+          console.error('[SMS] Failed to update smsLog for rejection:', dbErr);
+        }
 
-        // Don't retry on explicit rejection (wrong number, no balance, invalid sender, etc.)
+        // Don't retry on explicit rejection (wrong number, no balance, invalid sender, blacklist, etc.)
         throw new Error(rejectMsg);
       }
 
@@ -195,7 +209,7 @@ export async function sendSMS(to: string, message: string): Promise<void> {
       await prisma.smsLog.update({
         where: { id: log.id },
         data: {
-          messageId: messageId?.toString() || null,
+          messageId,
           status: status.toUpperCase(),
         }
       });

@@ -10,6 +10,7 @@ import { logAudit } from "@/lib/audit";
 const addVoterSchema = z.object({
   phone: z.string().min(1, "Phone is required"),
   name: z.string().optional(),
+  email: z.string().email("Invalid email format").optional().nullable(),
 });
 
 export async function GET(req: NextRequest) {
@@ -66,7 +67,7 @@ export async function POST(req: NextRequest) {
       return error(result.error.issues[0].message, 400);
     }
 
-    const { phone, name } = result.data;
+    const { phone, name, email } = result.data;
 
     const normalizedPhone = normalizePhone(phone);
     if (!normalizedPhone) {
@@ -86,6 +87,8 @@ export async function POST(req: NextRequest) {
       data: {
         phone: normalizedPhone,
         name: name || null,
+        email: email || null,
+        emailVerified: false,
         addedById: auth.admin.id,
       },
     });

@@ -11,6 +11,8 @@ interface Voter {
   id: number;
   phone: string;
   name: string | null;
+  email: string | null;
+  emailVerified: boolean;
   hasVoted: boolean;
   createdAt: string;
 }
@@ -86,6 +88,30 @@ export default function AdminVotersPage() {
       } else {
         const data = await res.json();
         alert(data.error || "Failed to update name");
+      }
+    } catch (err) {
+      alert("Error updating voter");
+    }
+  };
+
+  const handleEditEmail = async (id: number, currentEmail: string | null) => {
+    const newEmail = window.prompt(
+      "Enter new email for voter (leave empty to clear):",
+      currentEmail || "",
+    );
+    if (newEmail === null) return;
+
+    try {
+      const res = await fetch(`/api/admin/voters/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "edit", email: newEmail }),
+      });
+      if (res.ok) {
+        fetchVoters();
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to update email");
       }
     } catch (err) {
       alert("Error updating voter");
@@ -200,7 +226,9 @@ export default function AdminVotersPage() {
                 <tr className="border-b border-glass-border text-slate-400">
                   <th className="pb-3 font-medium px-4">Phone Number</th>
                   <th className="pb-3 font-medium px-4">Name</th>
-                  <th className="pb-3 font-medium px-4">Status</th>
+                  <th className="pb-3 font-medium px-4">Email</th>
+                  <th className="pb-3 font-medium px-4">Email Status</th>
+                  <th className="pb-3 font-medium px-4">Vote Status</th>
                   <th className="pb-3 font-medium px-4">Added On</th>
                   <th className="pb-3 font-medium px-4 text-right">Actions</th>
                 </tr>
@@ -208,13 +236,13 @@ export default function AdminVotersPage() {
               <tbody className="divide-y divide-glass-border">
                 {loading && voters.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-8 text-center text-slate-500">
+                    <td colSpan={7} className="py-8 text-center text-slate-500">
                       Loading voters...
                     </td>
                   </tr>
                 ) : voters.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-8 text-center text-slate-500">
+                    <td colSpan={7} className="py-8 text-center text-slate-500">
                       No voters found.
                     </td>
                   </tr>
@@ -232,6 +260,24 @@ export default function AdminVotersPage() {
                           <span className="text-slate-600 italic">No name</span>
                         )}
                       </td>
+                      <td className="py-3 px-4 text-slate-300">
+                        {voter.email ? (
+                          <span className="truncate max-w-[140px] inline-block" title={voter.email}>
+                            {voter.email}
+                          </span>
+                        ) : (
+                          <span className="text-slate-600 italic">—</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4">
+                        {voter.email ? (
+                          <Badge variant={voter.emailVerified ? "success" : "warning"}>
+                            {voter.emailVerified ? "Verified" : "Pending"}
+                          </Badge>
+                        ) : (
+                          <span className="text-slate-600 text-xs">—</span>
+                        )}
+                      </td>
                       <td className="py-3 px-4">
                         <Badge variant={voter.hasVoted ? "success" : "default"}>
                           {voter.hasVoted ? "Voted" : "Pending"}
@@ -246,6 +292,12 @@ export default function AdminVotersPage() {
                           className="text-xs font-medium px-2 py-1 rounded transition-colors text-brand-400 hover:bg-brand-500/10"
                         >
                           Edit
+                        </button>
+                        <button
+                          onClick={() => handleEditEmail(voter.id, voter.email)}
+                          className="text-xs font-medium px-2 py-1 rounded transition-colors text-accent-400 hover:bg-accent-500/10"
+                        >
+                          Email
                         </button>
                         {voter.hasVoted && (
                           <button

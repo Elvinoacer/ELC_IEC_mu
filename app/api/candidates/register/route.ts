@@ -10,7 +10,7 @@ import {
   deleteFile,
   extractKeyFromUrl,
 } from "@/lib/upload";
-import { trySendSMS, SMS_TEMPLATES } from "@/lib/sms";
+import { tryEmailSend, templateCandidateReceived } from "@/lib/email";
 import { normalizePhone } from "@/lib/phone";
 
 const candidateRegistrationSchema = z.object({
@@ -253,15 +253,24 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const smsSent = await trySendSMS(sessionPhone, SMS_TEMPLATES.candidateReceived(position));
-    const smsWarning = smsSent ? null : "Application saved, but SMS confirmation could not be delivered.";
+    // Send email notification if voter has verified email
+    let emailSent = false;
+    const voter = await prisma.voter.findUnique({
+      where: { phone: sessionPhone },
+      select: { email: true, emailVerified: true },
+    });
+    if (voter?.email && voter.emailVerified) {
+      const { subject, html } = templateCandidateReceived(position);
+      emailSent = await tryEmailSend(voter.email, subject, html);
+    }
+    const emailWarning = emailSent ? null : "Application saved, but email confirmation could not be delivered.";
 
     return success(
       {
         message:
           "Application submitted successfully. You will be notified once reviewed.",
         candidateId,
-        smsWarning,
+        emailWarning,
       },
       201,
     );

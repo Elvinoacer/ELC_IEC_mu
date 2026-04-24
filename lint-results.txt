@@ -1,0 +1,183 @@
+
+> iec_view_main@0.1.0 lint
+> eslint
+
+
+/home/elvin/Projects/businesses/IEC_ELC/iec_view_main/app/(admin)/admin/candidates/page.tsx
+   67:5   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/elvin/Projects/businesses/IEC_ELC/iec_view_main/app/(admin)/admin/candidates/page.tsx:67:5
+  65 |
+  66 |   useEffect(() => {
+> 67 |     fetchCandidates();
+     |     ^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  68 |     fetchPositions();
+  69 |   }, [fetchCandidates, fetchPositions]);
+  70 |  react-hooks/set-state-in-effect
+   93:19  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               @typescript-eslint/no-explicit-any
+  127:19  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               @typescript-eslint/no-explicit-any
+  147:47  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               @typescript-eslint/no-explicit-any
+
+/home/elvin/Projects/businesses/IEC_ELC/iec_view_main/app/(admin)/admin/config/page.tsx
+    6:8   warning  'Input' is defined but never used         @typescript-eslint/no-unused-vars
+   41:16  warning  'err' is defined but never used           @typescript-eslint/no-unused-vars
+   75:19  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  103:19  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/elvin/Projects/businesses/IEC_ELC/iec_view_main/app/(admin)/admin/config/positions/page.tsx
+   33:14  warning  'err' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         @typescript-eslint/no-unused-vars
+   41:5   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/elvin/Projects/businesses/IEC_ELC/iec_view_main/app/(admin)/admin/config/positions/page.tsx:41:5
+  39 |
+  40 |   useEffect(() => {
+> 41 |     fetchPositions();
+     |     ^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  42 |   }, [fetchPositions]);
+  43 |
+  44 |   const handleAdd = async (e: React.FormEvent) => {  react-hooks/set-state-in-effect
+   60:19  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @typescript-eslint/no-explicit-any
+   74:19  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @typescript-eslint/no-explicit-any
+  109:14  warning  'err' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         @typescript-eslint/no-unused-vars
+
+/home/elvin/Projects/businesses/IEC_ELC/iec_view_main/app/(admin)/admin/logs/page.tsx
+  13:12  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+  44:5   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/elvin/Projects/businesses/IEC_ELC/iec_view_main/app/(admin)/admin/logs/page.tsx:44:5
+  42 |
+  43 |   useEffect(() => {
+> 44 |     fetchLogs(page);
+     |     ^^^^^^^^^ Avoid calling setState() directly within an effect
+  45 |   }, [page]);
+  46 |
+  47 |   return (  react-hooks/set-state-in-effect
+
+/home/elvin/Projects/businesses/IEC_ELC/iec_view_main/app/(admin)/admin/vote-attempts/page.tsx
+  42:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/elvin/Projects/businesses/IEC_ELC/iec_view_main/app/(admin)/admin/vote-attempts/page.tsx:42:5
+  40 |
+  41 |   useEffect(() => {
+> 42 |     fetchAttempts(page);
+     |     ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  43 |   }, [page]);
+  44 |
+  45 |   return (  react-hooks/set-state-in-effect
+
+/home/elvin/Projects/businesses/IEC_ELC/iec_view_main/app/(admin)/admin/voters/page.tsx
+   68:14  warning  'err' is defined but never used  @typescript-eslint/no-unused-vars
+   92:14  warning  'err' is defined but never used  @typescript-eslint/no-unused-vars
+  116:14  warning  'err' is defined but never used  @typescript-eslint/no-unused-vars
+  153:14  warning  'err' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/elvin/Projects/businesses/IEC_ELC/iec_view_main/app/(public)/not-registered/page.tsx
+  21:9  error  Do not use an `<a>` element to navigate to `/`. Use `<Link />` from `next/link` instead. See: https://nextjs.org/docs/messages/no-html-link-for-pages  @next/next/no-html-link-for-pages
+
+/home/elvin/Projects/businesses/IEC_ELC/iec_view_main/app/api/admin/logout/route.ts
+  24:12  warning  'err' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/elvin/Projects/businesses/IEC_ELC/iec_view_main/app/api/admin/results/reconcile/route.ts
+  31:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/elvin/Projects/businesses/IEC_ELC/iec_view_main/app/api/admin/voters/[id]/route.ts
+  71:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  96:27  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/elvin/Projects/businesses/IEC_ELC/iec_view_main/app/api/admin/voters/export/route.ts
+  46:12  warning  'err' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/elvin/Projects/businesses/IEC_ELC/iec_view_main/app/api/candidates/register/route.ts
+  215:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/elvin/Projects/businesses/IEC_ELC/iec_view_main/app/api/candidates/validate-scholar-code/route.ts
+  23:12  warning  'err' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/elvin/Projects/businesses/IEC_ELC/iec_view_main/app/api/results/route.ts
+  7:27  warning  'req' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/elvin/Projects/businesses/IEC_ELC/iec_view_main/app/api/vote/submit/route.ts
+  156:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/elvin/Projects/businesses/IEC_ELC/iec_view_main/app/api/webhooks/sms/delivery-report/route.ts
+  13:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/elvin/Projects/businesses/IEC_ELC/iec_view_main/components/admin/AddVoterModal.tsx
+  42:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/elvin/Projects/businesses/IEC_ELC/iec_view_main/components/admin/VoterImportModal.tsx
+  17:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  57:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/elvin/Projects/businesses/IEC_ELC/iec_view_main/components/public/CandidateRegistrationForm.tsx
+    4:8   warning  'Card' is defined but never used                                 @typescript-eslint/no-unused-vars
+   75:19  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   95:19  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  131:19  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  231:17  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+/home/elvin/Projects/businesses/IEC_ELC/iec_view_main/components/voter/BallotForm.tsx
+  79:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/elvin/Projects/businesses/IEC_ELC/iec_view_main/components/voter/DetailedResults.tsx
+  151:25  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/home/elvin/Projects/businesses/IEC_ELC/iec_view_main/components/voter/EmailRegistrationCard.tsx
+  249:11  error  Do not use an `<a>` element to navigate to `/`. Use `<Link />` from `next/link` instead. See: https://nextjs.org/docs/messages/no-html-link-for-pages  @next/next/no-html-link-for-pages
+
+/home/elvin/Projects/businesses/IEC_ELC/iec_view_main/lib/audit.ts
+  13:13  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  16:69  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  50:69  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/elvin/Projects/businesses/IEC_ELC/iec_view_main/lib/prisma.js
+  11:1   error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+  12:16  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+  13:12  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+  14:20  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+
+/home/elvin/Projects/businesses/IEC_ELC/iec_view_main/lib/response.ts
+  17:10  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  33:10  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/elvin/Projects/businesses/IEC_ELC/iec_view_main/lib/sms.ts
+  127:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  286:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/elvin/Projects/businesses/IEC_ELC/iec_view_main/lib/upload.ts
+  13:16  warning  'uuidv4' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/elvin/Projects/businesses/IEC_ELC/iec_view_main/prisma/seed-voters.js
+   7:33  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  39:16  error    A `require()` style import is forbidden                                @typescript-eslint/no-require-imports
+  53:21  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+
+/home/elvin/Projects/businesses/IEC_ELC/iec_view_main/scratch/test-sms.ts
+  58:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 58 problems (41 errors, 17 warnings)
+

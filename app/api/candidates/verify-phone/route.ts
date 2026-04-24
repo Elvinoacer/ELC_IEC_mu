@@ -73,11 +73,18 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 4. Send OTP
-    const { expiresAt, smsFailed } = await sendOTP(normalizedPhone, ipAddress);
+    // 4. Send OTP — need voter's verified email for delivery
+    if (!voter.email || !voter.emailVerified) {
+      return error(
+        "No verified email on file. Please register your email at the registration desk before applying.",
+        403,
+      );
+    }
+
+    const { expiresAt, emailFailed } = await sendOTP(normalizedPhone, voter.email, ipAddress);
 
     return success({
-      message: smsFailed ? "OTP created but SMS may have failed. Request a new code if you don't receive it." : "OTP sent successfully",
+      message: emailFailed ? "OTP created but email delivery may have failed. Request a new code if you don't receive it." : "OTP sent successfully",
       alreadySent: false,
       expiresAt: expiresAt.toISOString(),
     });
