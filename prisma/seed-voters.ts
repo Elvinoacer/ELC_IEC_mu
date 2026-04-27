@@ -3,6 +3,7 @@ import { RAW_VOTER_PHONES } from "./voter-phone-seed";
 
 async function loadRawPhones(): Promise<readonly string[]> {
   try {
+    // @ts-ignore - Local file is optional and ignored by git
     const localModule = await import("./voter-phone-seed.local");
     if (Array.isArray(localModule.RAW_VOTER_PHONES)) {
       return localModule.RAW_VOTER_PHONES as readonly string[];
