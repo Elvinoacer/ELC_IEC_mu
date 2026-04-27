@@ -5,6 +5,7 @@ import { getElectionPhase } from '@/lib/phases';
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
 
+export const dynamic = 'force-dynamic';
 export const metadata = {
   title: 'Register Your Email — ELP Moi Chapter Elections',
   description: 'Link your email address to your voter account to receive OTPs on election day.',

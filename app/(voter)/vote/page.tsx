@@ -5,6 +5,7 @@ import VoterShell from '@/components/layouts/VoterShell';
 import BallotWizard from '@/components/voter/BallotWizard';
 import { verifyVoterToken } from '@/lib/jwt';
 
+export const dynamic = 'force-dynamic';
 export const metadata = {
   title: 'Official Ballot - ELP Moi Chapter',
 };
