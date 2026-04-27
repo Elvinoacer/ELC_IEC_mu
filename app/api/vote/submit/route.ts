@@ -170,11 +170,15 @@ export async function POST(req: NextRequest) {
     });
 
     // Log success
-    await logVoteAttempt(req, "SUCCESS", {
-      voterId,
-      phone,
-      deviceHash: deviceHashStr,
-    });
+    try {
+      await logVoteAttempt(req, "SUCCESS", {
+        voterId,
+        phone,
+        deviceHash: deviceHashStr,
+      });
+    } catch (auditErr) {
+      console.error("[AUDIT] Failed to log vote success:", auditErr);
+    }
 
     // 3. Clear cookie
     const clearCookie = `vote_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Strict`;
@@ -217,12 +221,16 @@ export async function POST(req: NextRequest) {
     if (errorMsg === "ALREADY_VOTED") status = "DUPLICATE";
     if (errorMsg?.startsWith("VOTING_")) status = "OUTSIDE_WINDOW";
 
-    await logVoteAttempt(req, status, {
-      voterId: voterId,
-      phone: phone,
-      deviceHash: deviceHashStr,
-      reason: errorMsg,
-    });
+    try {
+      await logVoteAttempt(req, status, {
+        voterId: voterId,
+        phone: phone,
+        deviceHash: deviceHashStr,
+        reason: errorMsg,
+      });
+    } catch (auditErr) {
+      console.error("[AUDIT] Failed to log vote attempt:", auditErr);
+    }
 
     if (errorMsg === "ALREADY_VOTED") {
       return error("You have already cast your vote.", 409);
