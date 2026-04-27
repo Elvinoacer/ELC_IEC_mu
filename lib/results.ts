@@ -38,7 +38,9 @@ export async function generateResultsPayload(options?: {
   const [total, voted, config, dbPositions] = await Promise.all([
     prisma.voter.count(),
     prisma.voter.count({ where: { hasVoted: true } }),
-    prisma.votingConfig.findUnique({ where: { id: 1 } }),
+    prisma.votingConfig.findFirst({
+      orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+    }),
     prisma.position.findMany({
       orderBy: { displayOrder: "asc" },
       include: {

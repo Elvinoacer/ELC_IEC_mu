@@ -1,11 +1,10 @@
-import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { success, serverError } from "@/lib/response";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
-    const config = await prisma.votingConfig.findUnique({ 
-      where: { id: 1 },
+    const config = await prisma.votingConfig.findFirst({
+      orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
       select: {
         opensAt: true,
         closesAt: true,
@@ -14,19 +13,19 @@ export async function GET(req: NextRequest) {
         voterRegOpensAt: true,
         voterRegClosesAt: true,
         isManuallyClosed: true,
-      }
+      },
     });
-    
+
     if (!config) {
-      return success({ 
+      return success({
         isConfigured: false,
-        isManuallyClosed: false
+        isManuallyClosed: false,
       });
     }
-    
-    return success({ 
-      ...config, 
-      isConfigured: true 
+
+    return success({
+      ...config,
+      isConfigured: true,
     });
   } catch (err) {
     return serverError(err);

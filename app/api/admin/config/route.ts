@@ -6,8 +6,8 @@ import { requireAdminSession } from "@/lib/admin-auth";
 import { logAudit } from "@/lib/audit";
 
 const configSchema = z.object({
-  opensAt: z.string().datetime(),
-  closesAt: z.string().datetime(),
+  opensAt: z.string().datetime().optional(),
+  closesAt: z.string().datetime().optional(),
   candidateRegOpensAt: z.string().datetime().optional().nullable(),
   candidateRegClosesAt: z.string().datetime().optional().nullable(),
   voterRegOpensAt: z.string().datetime().optional().nullable(),
@@ -20,8 +20,10 @@ export async function GET(req: NextRequest) {
     const auth = await requireAdminSession(req);
     if ("response" in auth) return auth.response;
 
-    let config = await prisma.votingConfig.findUnique({ where: { id: 1 } });
-    
+    let config = await prisma.votingConfig.findFirst({
+      orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+    });
+
     if (!config) {
       // Create default if not exists
       config = await prisma.votingConfig.create({
@@ -29,7 +31,7 @@ export async function GET(req: NextRequest) {
           id: 1,
           opensAt: new Date(),
           closesAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // +24h
-        }
+        },
       });
     }
 
@@ -54,62 +56,113 @@ export async function PATCH(req: NextRequest) {
     const data = result.data;
     const adminId = auth.admin.id;
 
+    const currentConfig = await prisma.votingConfig.findFirst({
+      orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+    });
+
+    const opensAtDate = data.opensAt
+      ? new Date(data.opensAt)
+      : (currentConfig?.opensAt ?? null);
+    const closesAtDate = data.closesAt
+      ? new Date(data.closesAt)
+      : (currentConfig?.closesAt ?? null);
+
+    if (!opensAtDate || !closesAtDate) {
+      return error(
+        "Voting window opensAt and closesAt must be configured.",
+        400,
+      );
+    }
+
+    const candidateRegOpensAtDate =
+      data.candidateRegOpensAt === undefined
+        ? (currentConfig?.candidateRegOpensAt ?? null)
+        : data.candidateRegOpensAt
+          ? new Date(data.candidateRegOpensAt)
+          : null;
+
+    const candidateRegClosesAtDate =
+      data.candidateRegClosesAt === undefined
+        ? (currentConfig?.candidateRegClosesAt ?? null)
+        : data.candidateRegClosesAt
+          ? new Date(data.candidateRegClosesAt)
+          : null;
+
+    const voterRegOpensAtDate =
+      data.voterRegOpensAt === undefined
+        ? (currentConfig?.voterRegOpensAt ?? null)
+        : data.voterRegOpensAt
+          ? new Date(data.voterRegOpensAt)
+          : null;
+
+    const voterRegClosesAtDate =
+      data.voterRegClosesAt === undefined
+        ? (currentConfig?.voterRegClosesAt ?? null)
+        : data.voterRegClosesAt
+          ? new Date(data.voterRegClosesAt)
+          : null;
+
+    const isManuallyClosed =
+      data.isManuallyClosed ?? currentConfig?.isManuallyClosed ?? false;
+
     // Validate non-overlap: Registration must end before Voting starts
-    if (data.candidateRegOpensAt && data.candidateRegClosesAt) {
-      const regOpen = new Date(data.candidateRegOpensAt);
-      const regClose = new Date(data.candidateRegClosesAt);
-      const voteOpen = new Date(data.opensAt);
-      const voteClose = new Date(data.closesAt);
+    if (candidateRegOpensAtDate && candidateRegClosesAtDate) {
+      const regOpen = candidateRegOpensAtDate;
+      const regClose = candidateRegClosesAtDate;
+      const voteOpen = opensAtDate;
 
       if (regClose > voteOpen) {
-        return error("Registration window cannot overlap with the voting window. Registration must close before voting opens.", 400);
+        return error(
+          "Registration window cannot overlap with the voting window. Registration must close before voting opens.",
+          400,
+        );
       }
-      
+
       if (regOpen >= regClose) {
-        return error("Registration opening date must be before the closing date.", 400);
+        return error(
+          "Registration opening date must be before the closing date.",
+          400,
+        );
       }
     }
 
-    if (new Date(data.opensAt) >= new Date(data.closesAt)) {
+    if (opensAtDate >= closesAtDate) {
       return error("Voting opening date must be before the closing date.", 400);
     }
 
-    const oldConfig = await prisma.votingConfig.findUnique({ where: { id: 1 } });
+    const oldConfig = currentConfig;
+    const targetId = currentConfig?.id ?? 1;
 
     const config = await prisma.votingConfig.upsert({
-      where: { id: 1 },
+      where: { id: targetId },
       update: {
-        opensAt: new Date(data.opensAt),
-        closesAt: new Date(data.closesAt),
-        candidateRegOpensAt: data.candidateRegOpensAt ? new Date(data.candidateRegOpensAt) : null,
-        candidateRegClosesAt: data.candidateRegClosesAt ? new Date(data.candidateRegClosesAt) : null,
-        voterRegOpensAt: data.voterRegOpensAt ? new Date(data.voterRegOpensAt) : null,
-        voterRegClosesAt: data.voterRegClosesAt ? new Date(data.voterRegClosesAt) : null,
-        isManuallyClosed: data.isManuallyClosed ?? false,
-        updatedById: adminId as number,
+        opensAt: opensAtDate,
+        closesAt: closesAtDate,
+        candidateRegOpensAt: candidateRegOpensAtDate,
+        candidateRegClosesAt: candidateRegClosesAtDate,
+        voterRegOpensAt: voterRegOpensAtDate,
+        voterRegClosesAt: voterRegClosesAtDate,
+        isManuallyClosed,
+        updatedById: adminId,
         updatedAt: new Date(),
-      } as any,
+      },
       create: {
-        id: 1,
-        opensAt: new Date(data.opensAt),
-        closesAt: new Date(data.closesAt),
-        candidateRegOpensAt: data.candidateRegOpensAt ? new Date(data.candidateRegOpensAt) : null,
-        candidateRegClosesAt: data.candidateRegClosesAt ? new Date(data.candidateRegClosesAt) : null,
-        voterRegOpensAt: data.voterRegOpensAt ? new Date(data.voterRegOpensAt) : null,
-        voterRegClosesAt: data.voterRegClosesAt ? new Date(data.voterRegClosesAt) : null,
-        isManuallyClosed: data.isManuallyClosed ?? false,
-        updatedById: adminId as number,
-      } as any,
+        id: targetId,
+        opensAt: opensAtDate,
+        closesAt: closesAtDate,
+        candidateRegOpensAt: candidateRegOpensAtDate,
+        candidateRegClosesAt: candidateRegClosesAtDate,
+        voterRegOpensAt: voterRegOpensAtDate,
+        voterRegClosesAt: voterRegClosesAtDate,
+        isManuallyClosed,
+        updatedById: adminId,
+      },
     });
 
-    await logAudit(
-      req,
-      adminId,
-      "UPDATE_CONFIG",
-      "VotingConfig",
-      1,
-      { old: oldConfig, new: config }
-    );
+    await logAudit(req, adminId, "UPDATE_CONFIG", "VotingConfig", targetId, {
+      old: oldConfig,
+      new: config,
+    });
 
     return success({ message: "Configuration updated successfully", config });
   } catch (err) {

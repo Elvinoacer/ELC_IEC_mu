@@ -11,14 +11,12 @@ type ParsedPhones = {
 };
 
 async function loadRawPhones(): Promise<readonly string[]> {
-  try {
-    // @ts-ignore - Local file is optional and ignored by git
-    const localModule = await import("./voter-phone-seed.local");
-    if (Array.isArray(localModule.RAW_VOTER_PHONES)) {
-      return localModule.RAW_VOTER_PHONES as readonly string[];
-    }
-  } catch {
-    // Local private seed file is optional.
+  const localModule = (await import("./voter-phone-seed.local").catch(
+    () => null,
+  )) as { RAW_VOTER_PHONES?: readonly string[] } | null;
+
+  if (Array.isArray(localModule?.RAW_VOTER_PHONES)) {
+    return localModule.RAW_VOTER_PHONES;
   }
 
   return RAW_VOTER_PHONES;
@@ -117,8 +115,18 @@ async function main() {
 
   // 3. Create Default Voting Config (Opens in 1 hour, closes in 24 hours)
   const now = new Date();
-  const config = await prisma.votingConfig.create({
-    data: {
+  const config = await prisma.votingConfig.upsert({
+    where: { id: 1 },
+    update: {
+      opensAt: new Date(now.getTime() + 60 * 60 * 1000),
+      closesAt: new Date(now.getTime() + 25 * 60 * 60 * 1000),
+      candidateRegOpensAt: new Date(now.getTime() - 24 * 60 * 60 * 1000),
+      candidateRegClosesAt: new Date(now.getTime() + 48 * 60 * 60 * 1000),
+      isManuallyClosed: false,
+      updatedById: admin.id,
+    },
+    create: {
+      id: 1,
       opensAt: new Date(now.getTime() + 60 * 60 * 1000),
       closesAt: new Date(now.getTime() + 25 * 60 * 60 * 1000),
       candidateRegOpensAt: new Date(now.getTime() - 24 * 60 * 60 * 1000),

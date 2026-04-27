@@ -1,4 +1,4 @@
 
 > iec_view_main@0.1.0 lint
-> eslint app/(admin)/admin/candidates/page.tsx app/api/admin/candidates/route.ts app/(public)/page.tsx components/layouts/PublicShell.tsx
+> eslint app/api/admin/config/route.ts app/api/election-status/route.ts lib/results.ts app/(voter)/vote/page.tsx app/(public)/register-email/page.tsx app/api/voter/register-email/route.ts app/api/vote/auth/request-otp/route.ts app/api/vote/submit/route.ts prisma/seed.ts
 
