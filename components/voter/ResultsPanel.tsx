@@ -225,6 +225,7 @@ export default function ResultsPanel({
                               <p className="text-[10px] text-slate-500 font-medium">
                                 {c.school}
                               </p>
+                            </div>
                             <div className="text-right">
                               <span
                                 className={`text-xs font-black ${idx === 0 ? "text-brand-400" : "text-slate-400"}`}
