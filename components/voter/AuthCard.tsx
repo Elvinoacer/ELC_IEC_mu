@@ -9,6 +9,8 @@ import OtpInput from "@/components/voter/OtpInput";
 import { generateDeviceFingerprint } from "@/lib/fingerprint";
 import { normalizePhone } from "@/lib/phone";
 
+import { useToast } from "@/context/ToastContext";
+
 type Step = "PHONE" | "OTP";
 
 export default function AuthCard({
@@ -17,6 +19,7 @@ export default function AuthCard({
   onAlreadyVoted?: () => void;
 }) {
   const router = useRouter();
+  const { success: showSuccess, info: showInfo, error: showError } = useToast();
   const [step, setStep] = useState<Step>("PHONE");
   const [localPhone, setLocalPhone] = useState("");
   const [normalizedPhone, setNormalizedPhone] = useState("");
@@ -31,6 +34,7 @@ export default function AuthCard({
   const [fingerprint, setFingerprint] = useState("");
   const [alreadyVotedMessage, setAlreadyVotedMessage] = useState("");
   const [deviceCheckLoading, setDeviceCheckLoading] = useState(true);
+  const [warning, setWarning] = useState<string | null>(null);
 
   const otpCode = useMemo(() => otp.join(""), [otp]);
 
@@ -51,6 +55,7 @@ export default function AuthCard({
 
         const json = await res.json();
         if (!cancelled && res.ok && json.data?.hasVotedOnThisDevice) {
+          showInfo("You have already voted on this device.");
           router.push("/results?voted=true");
         }
       } catch {
@@ -90,6 +95,7 @@ export default function AuthCard({
 
     setLoading(true);
     setError(null);
+    setWarning(null);
     setAlreadyVotedMessage("");
 
     const res = await fetch("/api/vote/auth/request-otp", {
@@ -104,6 +110,7 @@ export default function AuthCard({
         setAlreadyVotedMessage(
           "You've already cast your vote! Scroll down to watch live results.",
         );
+        showInfo("You have already voted.");
         onAlreadyVoted?.();
         setLoading(false);
         return;
@@ -126,6 +133,8 @@ export default function AuthCard({
       setError(
         "A valid OTP is already active for this number. Please use the code already sent.",
       );
+    } else {
+      showSuccess(`OTP sent to ${data.maskedPhone || parsed}`);
     }
     setLoading(false);
   };
@@ -135,6 +144,7 @@ export default function AuthCard({
 
     setLoading(true);
     setError(null);
+    setWarning(null);
 
     const res = await fetch("/api/vote/auth/verify-otp", {
       method: "POST",
@@ -155,7 +165,14 @@ export default function AuthCard({
       return;
     }
 
-    router.push("/vote");
+    showSuccess("Device verified ✓");
+
+    if (json.data?.deviceWarning) {
+      setWarning("Recognized new device. Updating security records...");
+      setTimeout(() => router.push("/vote"), 2000);
+    } else {
+      router.push("/vote");
+    }
   };
 
   return (
@@ -184,6 +201,11 @@ export default function AuthCard({
       {alreadyVotedMessage && (
         <p className="mb-4 rounded-lg border border-brand-500/20 bg-brand-500/10 p-3 text-sm text-brand-200">
           {alreadyVotedMessage}
+        </p>
+      )}
+      {warning && (
+        <p className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-300 animate-pulse">
+          {warning}
         </p>
       )}
       {error && (

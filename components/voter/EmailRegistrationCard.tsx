@@ -8,11 +8,15 @@ import OtpInput from '@/components/voter/OtpInput';
 import Input from '@/components/ui/Input';
 import { normalizePhone } from '@/lib/phone';
 import { generateDeviceFingerprint } from '@/lib/fingerprint';
+import Countdown from '@/components/ui/Countdown';
 import Link from 'next/link';
+import { useToast } from "@/context/ToastContext";
+import confetti from "canvas-confetti";
 
 type Step = 'PHONE' | 'EMAIL_ENTRY' | 'OTP_VERIFY' | 'SUCCESS' | 'ALREADY_REGISTERED';
 
 export default function EmailRegistrationCard() {
+  const { success: showSuccess, error: showError, info: showInfo } = useToast();
   const [step, setStep] = useState<Step>('PHONE');
   const [localPhone, setLocalPhone] = useState('');
   const [normalizedPhone, setNormalizedPhone] = useState('');
@@ -117,6 +121,7 @@ export default function EmailRegistrationCard() {
         setMaskedEmail(data.maskedEmail);
         setIsAlreadyRegistered(true);
         setStep('ALREADY_REGISTERED');
+        showInfo("You are already registered.");
       } else {
         setIsAlreadyRegistered(false);
         setStep('EMAIL_ENTRY');
@@ -160,6 +165,7 @@ export default function EmailRegistrationCard() {
       setCooldownSeconds(seconds);
       setOtp(Array(6).fill(''));
       setStep('OTP_VERIFY');
+      showSuccess(`Verification code sent to ${data.maskedEmail || email}`);
     } catch {
       setError('Network error. Please try again.');
     } finally {
@@ -196,6 +202,13 @@ export default function EmailRegistrationCard() {
 
       localStorage.setItem('elp_registered_phone', normalizedPhone);
       setStep('SUCCESS');
+      confetti({
+        particleCount: 150,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#22c55e', '#3b82f6', '#ffffff']
+      });
+      showSuccess("Registration complete!");
     } catch {
       setError('Network error. Please try again.');
     } finally {
@@ -307,9 +320,13 @@ export default function EmailRegistrationCard() {
           <OtpInput value={otp} onChange={setOtp} onComplete={handleVerifyOTP} disabled={loading} />
 
           {expiresAt && (
-            <p className="text-xs text-slate-400">
-              Code expires at {new Date(expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </p>
+            <div className="py-2">
+              <Countdown 
+                targetDate={new Date(expiresAt)} 
+                label="Code Expires In" 
+                className="scale-90 origin-center"
+              />
+            </div>
           )}
 
           <div className="grid grid-cols-2 gap-2 sm:gap-3">
@@ -365,8 +382,8 @@ export default function EmailRegistrationCard() {
 
       {step === 'ALREADY_REGISTERED' && (
         <div className="space-y-6 text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-accent-500/15 border border-accent-500/30">
-            <svg className="h-8 w-8 text-accent-400" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-success-500/15 border border-success-500/30">
+            <svg className="h-8 w-8 text-success-400" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>

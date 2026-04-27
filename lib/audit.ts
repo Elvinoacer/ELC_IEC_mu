@@ -39,7 +39,7 @@ export async function logAudit(
  */
 export async function logVoteAttempt(
   req: NextRequest,
-  status: 'SUCCESS' | 'FAILED' | 'DUPLICATE' | 'OUTSIDE_WINDOW',
+  status: 'SUCCESS' | 'FAILED' | 'DUPLICATE' | 'OUTSIDE_WINDOW' | 'DEVICE_MISMATCH',
   data: {
     voterId?: number;
     phone?: string;

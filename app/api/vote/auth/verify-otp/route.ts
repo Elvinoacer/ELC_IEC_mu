@@ -7,6 +7,8 @@ import { NextResponse } from 'next/server';
 import { normalizePhone } from '@/lib/phone';
 import { verifyOTP } from '@/lib/otp';
 import { signVoterToken } from '@/lib/jwt';
+import { logVoteAttempt } from '@/lib/audit';
+import { randomBytes } from 'crypto';
 
 const verifySchema = z.object({
   phone: z.string().min(1),
@@ -55,6 +57,13 @@ export async function POST(req: NextRequest) {
         await prisma.voter.update({ where: { id: voter.id }, data: { deviceHash } });
       } else if (voter.deviceHash !== deviceHash) {
         deviceWarning = true;
+        // Audit the mismatch
+        await logVoteAttempt(req, 'DEVICE_MISMATCH', {
+          voterId: voter.id,
+          phone: normalizedPhone,
+          deviceHash,
+          reason: `Device mismatch. Expected: ${voter.deviceHash}, Got: ${deviceHash}`
+        });
         await prisma.voter.update({ where: { id: voter.id }, data: { deviceHash } });
       }
     }
@@ -68,8 +77,18 @@ export async function POST(req: NextRequest) {
       maxAge: 900,
     });
 
+    const csrfToken = randomBytes(32).toString('hex');
+    const csrfCookie = serialize('csrf_token', csrfToken, {
+      httpOnly: false, // Client needs to read this
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 900,
+    });
+
     const res = success({ message: 'Verified successfully', deviceWarning });
-    res.headers.set('Set-Cookie', cookieHeader);
+    res.headers.append('Set-Cookie', cookieHeader);
+    res.headers.append('Set-Cookie', csrfCookie);
     return res;
   } catch (err) {
     return serverError(err);

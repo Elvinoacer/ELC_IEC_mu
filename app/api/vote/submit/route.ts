@@ -26,6 +26,17 @@ export async function POST(req: NextRequest) {
   let deviceHashStr: string | undefined;
 
   try {
+    // 0. CSRF Check (Double-submit pattern)
+    const csrfTokenCookie = req.cookies.get("csrf_token")?.value;
+    const csrfTokenHeader = req.headers.get("X-CSRF-Token");
+    if (
+      !csrfTokenCookie ||
+      !csrfTokenHeader ||
+      csrfTokenCookie !== csrfTokenHeader
+    ) {
+      return error("Security validation failed (CSRF).", 403);
+    }
+
     // 1. Verify Voter JWT
     const token = req.cookies.get("vote_session")?.value;
     if (!token) return error("Unauthorized. Please log in again.", 401);

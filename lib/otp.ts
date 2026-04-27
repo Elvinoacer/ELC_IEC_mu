@@ -9,7 +9,7 @@
 import { sendEmailVerificationOTP } from "./email";
 import { sendSMS } from "./sms";
 import { prisma } from "./prisma";
-import { createHash, timingSafeEqual } from "crypto";
+import { createHash, timingSafeEqual, randomInt } from "crypto";
 
 const OTP_TTL_MS = Number(process.env.OTP_TTL_SECONDS ?? 300) * 1000;
 const EMAIL_REG_OTP_TTL_MS =
@@ -45,7 +45,7 @@ function secureHashEquals(storedHash: string, providedCode: string): boolean {
 }
 
 function generateCode(digits = OTP_DIGITS): string {
-  return String(Math.floor(Math.random() * 10 ** digits)).padStart(digits, "0");
+  return String(randomInt(0, 10 ** digits)).padStart(digits, "0");
 }
 
 // ── Vote-Day OTP Functions (keyed by phone) ─────────────────────────────────────

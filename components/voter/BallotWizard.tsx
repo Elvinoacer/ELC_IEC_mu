@@ -8,6 +8,8 @@ import ReviewScreen from '@/components/voter/ReviewScreen';
 import Button from '@/components/ui/Button';
 import { generateDeviceFingerprint } from '@/lib/fingerprint';
 
+import { useToast } from "@/context/ToastContext";
+
 interface Candidate {
   id: number;
   name: string;
@@ -24,6 +26,7 @@ interface PositionData {
 
 export default function BallotWizard({ positions, deviceHash }: { positions: PositionData[]; deviceHash: string }) {
   const router = useRouter();
+  const { info: showInfo, success: showSuccess, error: showError } = useToast();
   const [currentStep, setCurrentStep] = useState(0);
   const [isReviewing, setIsReviewing] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
@@ -31,6 +34,7 @@ export default function BallotWizard({ positions, deviceHash }: { positions: Pos
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeFingerprint, setActiveFingerprint] = useState(deviceHash);
+  const [expiryWarning, setExpiryWarning] = useState(false);
 
   // Fallback: Regenerate fingerprint if missing or ensure it matches current device
   React.useEffect(() => {
@@ -43,6 +47,37 @@ export default function BallotWizard({ positions, deviceHash }: { positions: Pos
     refreshFingerprint();
   }, [activeFingerprint]);
 
+  // Session expiry management
+  React.useEffect(() => {
+    const sessionTimeout = 15 * 60 * 1000; // 15 minutes
+    const warningTime = 13 * 60 * 1000; // 13 minutes
+
+    const warningTimer = setTimeout(() => {
+      setExpiryWarning(true);
+    }, warningTime);
+
+    const expiryTimer = setTimeout(() => {
+      setError("Your secure session has expired. Please log in again to cast your vote.");
+    }, sessionTimeout);
+
+    return () => {
+      clearTimeout(warningTimer);
+      clearTimeout(expiryTimer);
+    };
+  }, []);
+
+  // Guard against accidental navigation
+  React.useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (Object.keys(selections).length > 0 && !submitting) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [selections, submitting]);
+
   const titles = useMemo(() => positions.map((p) => p.title), [positions]);
   const current = positions[currentStep];
 
@@ -53,6 +88,8 @@ export default function BallotWizard({ positions, deviceHash }: { positions: Pos
     }
     setSubmitting(true);
     setError(null);
+    showInfo("Casting your secure vote...");
+
     const payload = {
       deviceHash: activeFingerprint,
       selections: Object.entries(selections).map(([posId, candidateId]) => ({ 
@@ -60,14 +97,35 @@ export default function BallotWizard({ positions, deviceHash }: { positions: Pos
         candidateId 
       })),
     };
+    const getCsrfToken = () => {
+      if (typeof document === 'undefined') return '';
+      const name = "csrf_token=";
+      const decodedCookie = decodeURIComponent(document.cookie);
+      const ca = decodedCookie.split(';');
+      for(let i = 0; i <ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) == ' ') {
+          c = c.substring(1);
+        }
+        if (c.indexOf(name) == 0) {
+          return c.substring(name.length, c.length);
+        }
+      }
+      return "";
+    };
+
     const res = await fetch('/api/vote/submit', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': getCsrfToken()
+      },
       body: JSON.stringify(payload),
     });
     const json = await res.json();
     if (!res.ok) {
       if (res.status === 409) {
+        showInfo("Voted detected. Navigating to results...");
         router.push('/results?voted=true');
         return;
       }
@@ -75,6 +133,7 @@ export default function BallotWizard({ positions, deviceHash }: { positions: Pos
       setSubmitting(false);
       return;
     }
+    showSuccess("Vote confirmed!");
     router.push('/vote/confirmed');
   };
 
@@ -99,54 +158,76 @@ export default function BallotWizard({ positions, deviceHash }: { positions: Pos
     );
   }
 
-  if (isReviewing) {
-    return (
-      <ReviewScreen
-        positions={positions}
-        selections={selections}
-        confirmed={isConfirmed}
-        onConfirmToggle={setIsConfirmed}
-        onSubmit={onSubmit}
-        onBack={() => setIsReviewing(false)}
-        loading={submitting}
-        error={error}
-      />
-    );
-  }
-
   return (
     <div>
-      <BallotStepper titles={titles} currentStep={currentStep} selections={selections} />
-      <h2 className="mb-1 text-2xl font-bold text-white">{current.title}</h2>
-      <p className="mb-4 text-sm text-slate-400">Select one candidate.</p>
-      <div className="space-y-3 sm:grid sm:grid-cols-2 sm:gap-3 sm:space-y-0">
-        {current.candidates.map((candidate) => (
-          <CandidateCard
-            key={candidate.id}
-            candidate={candidate}
-            selected={selections[current.id] === candidate.id}
-            onSelect={() => setSelections((prev) => ({ ...prev, [current.id]: candidate.id }))}
-          />
-        ))}
-      </div>
+      {expiryWarning && (
+        <div className="mb-4 flex items-center justify-between rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-300 animate-in fade-in slide-in-from-top-4">
+          <div className="flex items-center gap-2">
+            <svg className="h-5 w-5 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Your session expires in less than 2 minutes. Please complete your ballot.</span>
+          </div>
+          <button onClick={() => setExpiryWarning(false)} className="text-amber-500/50 hover:text-amber-500">
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
 
-      <div className="ballot-action-bar mt-6 flex items-center justify-between gap-3">
-        <Button variant="outline" onClick={() => setCurrentStep((s) => Math.max(0, s - 1))} disabled={currentStep === 0}>Back</Button>
-        <Button
-          onClick={() => {
-            if (!selections[current.id]) return;
-            if (currentStep === positions.length - 1) {
-              setIsReviewing(true);
-            } else {
-              setCurrentStep((s) => s + 1);
-            }
-          }}
-          disabled={!selections[current.id]}
-          className="min-w-[190px]"
-        >
-          {currentStep === positions.length - 1 ? 'Review My Ballot' : 'Next'}
-        </Button>
-      </div>
+      {error && (
+        <div className="mb-4 rounded-xl border border-error-500/30 bg-error-500/10 p-4 text-sm text-error-300 animate-in fade-in slide-in-from-top-4">
+          {error}
+        </div>
+      )}
+
+      {isReviewing ? (
+        <ReviewScreen
+          positions={positions}
+          selections={selections}
+          confirmed={isConfirmed}
+          onConfirmToggle={setIsConfirmed}
+          onSubmit={onSubmit}
+          onBack={() => setIsReviewing(false)}
+          loading={submitting}
+          error={null} // Error is handled above in the common container
+        />
+      ) : (
+        <>
+          <BallotStepper titles={titles} currentStep={currentStep} selections={selections} />
+          <h2 className="mb-1 text-2xl font-bold text-white">{current.title}</h2>
+          <p className="mb-4 text-sm text-slate-400">Select one candidate.</p>
+          <div className="space-y-3 sm:grid sm:grid-cols-2 sm:gap-3 sm:space-y-0">
+            {current.candidates.map((candidate) => (
+              <CandidateCard
+                key={candidate.id}
+                candidate={candidate}
+                selected={selections[current.id] === candidate.id}
+                onSelect={() => setSelections((prev) => ({ ...prev, [current.id]: candidate.id }))}
+              />
+            ))}
+          </div>
+
+          <div className="ballot-action-bar mt-6 flex items-center justify-between gap-3">
+            <Button variant="outline" onClick={() => setCurrentStep((s) => Math.max(0, s - 1))} disabled={currentStep === 0}>Back</Button>
+            <Button
+              onClick={() => {
+                if (!selections[current.id]) return;
+                if (currentStep === positions.length - 1) {
+                  setIsReviewing(true);
+                } else {
+                  setCurrentStep((s) => s + 1);
+                }
+              }}
+              disabled={!selections[current.id]}
+              className="min-w-[190px]"
+            >
+              {currentStep === positions.length - 1 ? 'Review My Ballot' : 'Next'}
+            </Button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

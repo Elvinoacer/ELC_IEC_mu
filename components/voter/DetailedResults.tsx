@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { io, Socket } from "socket.io-client";
 import type { ResultsPayload } from "@/lib/results";
+import NumberCounter from "@/components/ui/NumberCounter";
 
 export default function DetailedResults({
   initialData,
@@ -15,9 +16,34 @@ export default function DetailedResults({
   const [data, setData] = useState<ResultsPayload | null>(initialData);
   const [connected, setConnected] = useState(false);
   const [liveEnabled, setLiveEnabled] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [justUpdated, setJustUpdated] = useState(false);
 
   useEffect(() => {
     let socket: Socket | null = null;
+    let pollInterval: NodeJS.Timeout | null = null;
+
+    const startPolling = () => {
+      if (pollInterval) return;
+      console.log("[POLLING] Socket offline, starting fallback polling...");
+      pollInterval = setInterval(async () => {
+        try {
+          const res = await fetch("/api/results");
+          const json = await res.json();
+          if (json.data) setData(json.data);
+        } catch (e) {
+          console.error("[POLLING] Fallback fetch failed:", e);
+        }
+      }, 5000);
+    };
+
+    const stopPolling = () => {
+      if (pollInterval) {
+        clearInterval(pollInterval);
+        pollInterval = null;
+      }
+    };
+
     if (liveEnabled) {
       const timer = setTimeout(() => {
         socket = io(
@@ -26,13 +52,30 @@ export default function DetailedResults({
             transports: ["websocket", "polling"],
           },
         );
-        socket.on("connect", () => setConnected(true));
-        socket.on("disconnect", () => setConnected(false));
-        socket.on("vote_cast", (payload: ResultsPayload) => setData(payload));
+        socket.on("connect", () => {
+          setConnected(true);
+          stopPolling();
+        });
+        socket.on("disconnect", () => {
+          setConnected(false);
+          startPolling();
+        });
+        socket.on("connect_error", () => {
+          setConnected(false);
+          startPolling();
+        });
+        socket.on("vote_cast", (payload: ResultsPayload) => {
+          setData(payload);
+          setLastUpdated(new Date());
+          setJustUpdated(true);
+          setTimeout(() => setJustUpdated(false), 2000);
+          stopPolling();
+        });
       }, 300);
 
       return () => {
         clearTimeout(timer);
+        stopPolling();
         socket?.disconnect();
       };
     }
@@ -67,8 +110,10 @@ export default function DetailedResults({
                   className={`relative inline-flex rounded-full h-3 w-3 ${connected ? "bg-accent-500" : "bg-slate-500"}`}
                 ></span>
               </span>
-              <p className="text-accent-400 text-xs font-bold uppercase tracking-[0.2em]">
+              <p className="text-accent-400 text-xs font-bold uppercase tracking-[0.2em] flex items-center gap-2">
                 Live Election Analytics
+                {justUpdated && <span className="text-success-400 animate-pulse transition-opacity duration-300">· Updated just now</span>}
+                {!justUpdated && <span className="text-slate-500 font-medium normal-case tracking-normal italic opacity-60">· Last update: {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>}
               </p>
             </div>
           </div>
@@ -124,7 +169,7 @@ export default function DetailedResults({
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <span className="text-lg sm:text-2xl font-bold text-white">
-                {turnout.percentage}%
+                <NumberCounter value={turnout.percentage} />%
               </span>
               <span className="text-[10px] font-bold text-slate-400 tracking-widest">
                 TURNOUT
@@ -146,7 +191,7 @@ export default function DetailedResults({
               />
             </svg>
             <span className="font-medium text-sm">
-              {turnout.voted} / {turnout.total} Votes Cast
+              <NumberCounter value={turnout.voted} /> / <NumberCounter value={turnout.total} /> Votes Cast
             </span>
           </div>
         </div>
@@ -290,7 +335,7 @@ export default function DetailedResults({
                           </span>
                           <div className="text-right shrink-0">
                             <span className="text-brand-400 font-black text-sm md:text-base block leading-none">
-                              {candidate.votes}
+                              <NumberCounter value={candidate.votes} />
                             </span>
                             <span className="text-[7px] md:text-[8px] text-slate-500 font-bold uppercase tracking-tighter">
                               Votes
@@ -298,7 +343,7 @@ export default function DetailedResults({
                           </div>
                         </div>
 
-                        <div className="h-1.5 md:h-2 w-full bg-white/5 rounded-full overflow-hidden">
+                        <div className={`h-1.5 md:h-2 w-full bg-white/5 rounded-full overflow-hidden ${justUpdated ? "animate-brief-scale" : ""}`}>
                           <div
                             className={`h-full bg-gradient-to-r from-brand-700 to-brand-500 transition-all duration-1000 ease-out relative ${
                               idx === 0

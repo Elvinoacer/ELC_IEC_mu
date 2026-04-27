@@ -4,12 +4,24 @@ import { useEffect, useState } from 'react';
 import VoterShell from '@/components/layouts/VoterShell';
 import Button from '@/components/ui/Button';
 
+import confetti from 'canvas-confetti';
+import { useToast } from "@/context/ToastContext";
+
 export default function VoteConfirmedPage() {
   const [countdown, setCountdown] = useState(5);
+  const { info: showInfo } = useToast();
 
   useEffect(() => {
+    confetti({
+      particleCount: 150,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: ['#22c55e', '#3b82f6', '#ffffff']
+    });
+
     const interval = setInterval(() => setCountdown((c) => Math.max(0, c - 1)), 1000);
     const redirectTimer = setTimeout(() => {
+      showInfo("Viewing live results...");
       window.location.href = '/results';
     }, 5000);
     return () => {

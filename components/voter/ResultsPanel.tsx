@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import Card from "@/components/ui/Card";
+import NumberCounter from "@/components/ui/NumberCounter";
 
 interface ResultsPayload {
   positions: Array<{
@@ -36,20 +37,48 @@ export default function ResultsPanel({
   const [data, setData] = useState<ResultsPayload | null>(initialData);
   const [connected, setConnected] = useState(false);
   const [socketError, setSocketError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [justUpdated, setJustUpdated] = useState(false);
 
   useEffect(() => {
     const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL;
     const isProd = process.env.NODE_ENV === "production";
 
+    let socket: Socket | null = null;
+    let pollInterval: NodeJS.Timeout | null = null;
+
+    const startPolling = () => {
+      if (pollInterval) return;
+      console.log(
+        "[POLLING] Socket offline or misconfigured, starting fallback polling...",
+      );
+      pollInterval = setInterval(async () => {
+        try {
+          const res = await fetch("/api/results");
+          const json = await res.json();
+          if (json.data) setData(json.data);
+        } catch (e) {
+          console.error("[POLLING] Fallback fetch failed:", e);
+        }
+      }, 5000);
+    };
+
+    const stopPolling = () => {
+      if (pollInterval) {
+        clearInterval(pollInterval);
+        pollInterval = null;
+      }
+    };
+
     if (isProd && !socketUrl) {
       console.error(
         "CRITICAL: NEXT_PUBLIC_SOCKET_URL is not defined in production.",
       );
-      setSocketError("Real-time connection misconfigured (missing URL).");
-      return;
+      setSocketError("Live feed URL missing. Using automatic refresh...");
+      startPolling();
+      return () => stopPolling();
     }
 
-    let socket: Socket | null = null;
     const timer = setTimeout(() => {
       socket = io(socketUrl || "http://localhost:3001/results", {
         transports: ["websocket", "polling"],
@@ -59,21 +88,35 @@ export default function ResultsPanel({
 
       socket.on("connect", () => {
         setConnected(true);
-        setSocketError(null);
+        setSocketError("Reconnected! Refreshing data...");
+        setTimeout(() => setSocketError(null), 3000);
+        stopPolling();
       });
 
       socket.on("connect_error", (err) => {
         console.error("Socket connection error:", err);
         setConnected(false);
         setSocketError("Reconnecting to live feed...");
+        startPolling();
       });
 
-      socket.on("disconnect", () => setConnected(false));
-      socket.on("vote_cast", (payload: ResultsPayload) => setData(payload));
+      socket.on("disconnect", () => {
+        setConnected(false);
+        startPolling();
+      });
+
+      socket.on("vote_cast", (payload: ResultsPayload) => {
+        setData(payload);
+        setLastUpdated(new Date());
+        setJustUpdated(true);
+        setTimeout(() => setJustUpdated(false), 2000);
+        stopPolling();
+      });
     }, 300);
 
     return () => {
       clearTimeout(timer);
+      stopPolling();
       socket?.disconnect();
     };
   }, []);
@@ -84,12 +127,17 @@ export default function ResultsPanel({
   return (
     <Card
       padding="lg"
-      className="h-full border-white/15 bg-gradient-to-br from-surface-800/80 via-surface-900/75 to-surface-900/70 backdrop-blur-xl shadow-[0_24px_60px_rgba(2,6,23,0.55)] p-3 sm:p-6"
+      className={`h-full border-white/15 bg-gradient-to-br from-surface-800/80 via-surface-900/75 to-surface-900/70 backdrop-blur-xl shadow-[0_24px_60px_rgba(2,6,23,0.55)] p-3 sm:p-6 transition-all duration-500 ${justUpdated ? "ring-2 ring-brand-500/50 shadow-[0_0_30px_rgba(163,42,41,0.3)] scale-[1.01]" : ""}`}
     >
       <div className="mb-3 sm:mb-4 flex items-center justify-between gap-2">
-        <h3 className="text-sm sm:text-lg font-bold text-white">
-          Live Results
-        </h3>
+        <div className="flex flex-col">
+          <h3 className="text-sm sm:text-lg font-bold text-white">
+            Live Results
+          </h3>
+          <span className="text-[10px] text-slate-500 font-medium italic">
+            Updated {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+          </span>
+        </div>
         <div className="flex flex-col items-end">
           <span
             className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs ${connected ? "bg-success-500/10 text-success-300" : "bg-slate-500/10 text-slate-400"}`}
@@ -177,19 +225,18 @@ export default function ResultsPanel({
                               <p className="text-[10px] text-slate-500 font-medium">
                                 {c.school}
                               </p>
-                            </div>
                             <div className="text-right">
                               <span
                                 className={`text-xs font-black ${idx === 0 ? "text-brand-400" : "text-slate-400"}`}
                               >
-                                {c.percentage}%
+                                <NumberCounter value={c.percentage} />%
                               </span>
                               <p className="text-[9px] text-slate-600 font-bold uppercase tracking-tighter">
-                                {c.votes} Votes
+                                <NumberCounter value={c.votes} /> Votes
                               </p>
                             </div>
                           </div>
-                          <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                          <div className={`h-1.5 w-full bg-white/5 rounded-full overflow-hidden ${justUpdated ? "animate-brief-scale" : ""}`}>
                             <div
                               className={`h-full rounded-full transition-all duration-1000 ease-out ${
                                 idx === 0
