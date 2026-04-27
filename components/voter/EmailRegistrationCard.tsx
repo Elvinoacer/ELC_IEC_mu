@@ -7,6 +7,7 @@ import SmartPhoneInput from '@/components/ui/PhoneInput';
 import OtpInput from '@/components/voter/OtpInput';
 import Input from '@/components/ui/Input';
 import { normalizePhone } from '@/lib/phone';
+import { generateDeviceFingerprint } from '@/lib/fingerprint';
 import Link from 'next/link';
 
 type Step = 'PHONE' | 'EMAIL_ENTRY' | 'OTP_VERIFY' | 'SUCCESS' | 'ALREADY_REGISTERED';
@@ -24,8 +25,53 @@ export default function EmailRegistrationCard() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [isAlreadyRegistered, setIsAlreadyRegistered] = useState(false);
+  const [fingerprint, setFingerprint] = useState('');
+  const [initialCheckLoading, setInitialCheckLoading] = useState(true);
 
   const otpCode = useMemo(() => otp.join(''), [otp]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const checkStatus = async () => {
+      try {
+        // 1. Check LocalStorage first (instant)
+        const savedPhone = localStorage.getItem('elp_registered_phone');
+        if (savedPhone) {
+          setLocalPhone(savedPhone);
+          // We still continue to background check to be sure
+        }
+
+        // 2. Generate fingerprint and check backend
+        const fp = await generateDeviceFingerprint();
+        if (cancelled) return;
+        setFingerprint(fp);
+
+        const res = await fetch('/api/voter/register-email/device-status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ deviceHash: fp }),
+        });
+
+        if (res.ok) {
+          const json = await res.json();
+          if (!cancelled && json.data?.isRegisteredOnThisDevice) {
+            setMaskedEmail(json.data.maskedEmail);
+            setNormalizedPhone(json.data.phone);
+            setStep('ALREADY_REGISTERED');
+            setIsAlreadyRegistered(true);
+            localStorage.setItem('elp_registered_phone', json.data.phone);
+          }
+        }
+      } catch (err) {
+        console.error('Initial check failed', err);
+      } finally {
+        if (!cancelled) setInitialCheckLoading(false);
+      }
+    };
+
+    checkStatus();
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     if (cooldownUntil <= 0) return;
@@ -131,7 +177,12 @@ export default function EmailRegistrationCard() {
       const res = await fetch('/api/voter/register-email/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: normalizedPhone, email, code }),
+        body: JSON.stringify({ 
+          phone: normalizedPhone, 
+          email, 
+          code,
+          deviceHash: fingerprint 
+        }),
       });
 
       const json = await res.json();
@@ -143,6 +194,7 @@ export default function EmailRegistrationCard() {
         return;
       }
 
+      localStorage.setItem('elp_registered_phone', normalizedPhone);
       setStep('SUCCESS');
     } catch {
       setError('Network error. Please try again.');
@@ -198,10 +250,16 @@ export default function EmailRegistrationCard() {
         <p className="mb-4 rounded-lg border border-error-500/30 bg-error-500/10 p-3 text-sm text-error-300">{error}</p>
       )}
 
+      {initialCheckLoading && (
+        <p className="mb-4 text-xs text-slate-400 animate-pulse">
+          Checking your secure registration status...
+        </p>
+      )}
+
       {step === 'PHONE' && (
         <div className="space-y-4">
-          <SmartPhoneInput value={localPhone} onChange={setLocalPhone} disabled={loading} autoFocus />
-          <Button className="w-full min-h-10 sm:min-h-12" onClick={handlePhoneContinue} loading={loading}>
+          <SmartPhoneInput value={localPhone} onChange={setLocalPhone} disabled={loading || initialCheckLoading} autoFocus />
+          <Button className="w-full min-h-10 sm:min-h-12" onClick={handlePhoneContinue} loading={loading} disabled={initialCheckLoading}>
             Continue
           </Button>
         </div>

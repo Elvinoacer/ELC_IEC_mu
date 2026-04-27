@@ -9,6 +9,7 @@ const schema = z.object({
   phone: z.string().min(1, 'Phone is required'),
   email: z.string().email('Invalid email format'),
   code: z.string().length(6, 'OTP must be 6 digits'),
+  deviceHash: z.string().optional(),
 });
 
 /**
@@ -22,7 +23,7 @@ export async function POST(req: NextRequest) {
 
     if (!result.success) return error(result.error.issues[0].message, 400);
 
-    const { email, code } = result.data;
+    const { email, code, deviceHash } = result.data;
     const normalizedPhone = normalizePhone(result.data.phone);
     if (!normalizedPhone) return error('Invalid phone number format.', 400);
 
@@ -51,13 +52,37 @@ export async function POST(req: NextRequest) {
     }
 
     // 5. [SUCCESS] Link and verify email on voter record
-    await prisma.voter.update({
-      where: { id: voter.id },
-      data: { 
-        email, 
-        emailVerified: true 
-      },
-    });
+    // Using a transaction to re-verify uniqueness at the moment of commit
+    try {
+      await prisma.$transaction(async (tx) => {
+        // Re-check email uniqueness inside the transaction
+        const emailTaken = await tx.voter.findFirst({
+          where: { 
+            email, 
+            id: { not: voter.id }, 
+            emailVerified: true 
+          },
+        });
+        
+        if (emailTaken) {
+          throw new Error('EMAIL_ALREADY_CLAIMED');
+        }
+
+        await tx.voter.update({
+          where: { id: voter.id },
+          data: { 
+            email, 
+            emailVerified: true,
+            deviceHash: deviceHash || undefined
+          },
+        });
+      });
+    } catch (txErr: any) {
+      if (txErr.message === 'EMAIL_ALREADY_CLAIMED') {
+        return error('This email has already been verified and claimed by another voter.', 400);
+      }
+      throw txErr; // Re-throw for general server error handler
+    }
 
     return success({ message: 'Email verified and linked successfully.' });
   } catch (err) {
