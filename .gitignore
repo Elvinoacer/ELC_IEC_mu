@@ -41,3 +41,7 @@ yarn-error.log*
 next-env.d.ts
 
 /app/generated/prisma
+
+# Local sensitive voter seed data (never commit)
+phonenumbers.txt
+prisma/voter-phone-seed.local.ts

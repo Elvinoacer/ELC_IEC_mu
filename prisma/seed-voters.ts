@@ -1,20 +1,35 @@
-import prisma from '../lib/prisma';
+import prisma from "../lib/prisma";
+import { RAW_VOTER_PHONES } from "./voter-phone-seed";
 
-const voters = [
-  { phone: "+254790670542", name: "Lead Voter" },
-  // Add more voters here in the format: { phone: "+254...", name: "Name" }
-];
+async function loadRawPhones(): Promise<readonly string[]> {
+  try {
+    const localModule = await import("./voter-phone-seed.local");
+    if (Array.isArray(localModule.RAW_VOTER_PHONES)) {
+      return localModule.RAW_VOTER_PHONES as readonly string[];
+    }
+  } catch {
+    // Local private seed file is optional.
+  }
+  return RAW_VOTER_PHONES;
+}
 
 async function main() {
-  console.log("🌱 Starting voter registration seed...");
+  console.log("🌱 Starting incremental voter registration seed...");
+  const rawPhones = await loadRawPhones();
+  
+  if (rawPhones.length === 0) {
+    console.warn("⚠️ No voter phones found in prisma/voter-phone-seed.local.ts");
+    return;
+  }
+
 
   let addedCount = 0;
   let skippedCount = 0;
 
-  for (const voter of voters) {
+  for (const phone of rawPhones) {
     try {
       // Basic normalization: ensure it starts with +
-      let normalizedPhone = voter.phone.trim();
+      let normalizedPhone = phone.trim();
       if (normalizedPhone.startsWith('0')) {
         normalizedPhone = '+254' + normalizedPhone.substring(1);
       } else if (!normalizedPhone.startsWith('+')) {
@@ -23,23 +38,23 @@ async function main() {
 
       await prisma.voter.upsert({
         where: { phone: normalizedPhone },
-        update: { name: voter.name }, // Update name if already exists
+        update: {}, // Don't overwrite if exists
         create: {
           phone: normalizedPhone,
-          name: voter.name,
+          name: null,
           hasVoted: false,
         },
       });
       
-      console.log(`✅ Registered: ${normalizedPhone} (${voter.name || 'Anonymous'})`);
+      console.log(`✅ Registered: ${normalizedPhone}`);
       addedCount++;
     } catch (error) {
-      console.error(`❌ Failed to register ${voter.phone}:`, error);
+      console.error(`❌ Failed to register ${phone}:`, error);
       skippedCount++;
     }
   }
 
-  console.log(`\n🏁 Voter seeding completed!`);
+  console.log(`\n🏁 Incremental voter seeding completed!`);
   console.log(`📊 Summary: ${addedCount} registered, ${skippedCount} skipped.`);
 }
 

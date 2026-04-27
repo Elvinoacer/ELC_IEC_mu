@@ -1,4 +1,4 @@
-import prisma from './prisma';
+import prisma from "./prisma";
 
 export interface CandidateResult {
   id: number;
@@ -40,29 +40,33 @@ export async function generateResultsPayload(options?: {
     prisma.voter.count({ where: { hasVoted: true } }),
     prisma.votingConfig.findUnique({ where: { id: 1 } }),
     prisma.position.findMany({
-      orderBy: { displayOrder: 'asc' },
+      orderBy: { displayOrder: "asc" },
       include: {
         candidates: {
-          where: { status: 'APPROVED' },
+          where: { status: "APPROVED" },
           include: {
             _count: {
-              select: { voteRecords: true }
-            }
-          }
+              select: { voteRecords: true },
+            },
+          },
         },
       },
     }),
   ]);
 
   const now = new Date();
-  const isOpen = !!config && !config.isManuallyClosed && now >= config.opensAt && now <= config.closesAt;
+  const isOpen =
+    !!config &&
+    !config.isManuallyClosed &&
+    now >= config.opensAt &&
+    now <= config.closesAt;
   const showCandidateResults = options?.includeCandidateResults ?? !isOpen;
 
   const positions: PositionResult[] = dbPositions.map((pos) => {
     // Map db candidates to include the count as 'votes'
-    const candidatesWithVotes = pos.candidates.map(c => ({
+    const candidatesWithVotes = pos.candidates.map((c) => ({
       ...c,
-      votes: c._count.voteRecords
+      votes: c._count.voteRecords,
     }));
 
     // Sort by votes descending, then name ascending
@@ -89,7 +93,10 @@ export async function generateResultsPayload(options?: {
         school: c.school,
         yearOfStudy: c.yearOfStudy,
         votes: showCandidateResults ? c.votes : 0,
-        percentage: showCandidateResults && totalVotes > 0 ? Number(((c.votes / totalVotes) * 100).toFixed(1)) : 0,
+        percentage:
+          showCandidateResults && totalVotes > 0
+            ? Number(((c.votes / totalVotes) * 100).toFixed(1))
+            : 0,
       })),
     };
   });
