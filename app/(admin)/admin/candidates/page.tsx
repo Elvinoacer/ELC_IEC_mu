@@ -130,29 +130,21 @@ export default function AdminCandidatesPage() {
 
   const handleFileUpload = async (file: File) => {
     try {
-      const res = await fetch("/api/admin/upload/presigned", {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/admin/upload", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fileName: file.name,
-          contentType: file.type,
-        }),
+        body: formData,
       });
-      const { data, error } = await res.json();
-      if (error) throw new Error(error);
+      
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Upload failed");
 
-      const uploadRes = await fetch(data.uploadUrl, {
-        method: "PUT",
-        headers: { "Content-Type": file.type },
-        body: file,
-      });
-
-      if (!uploadRes.ok) throw new Error("Upload failed");
-
-      return data.publicUrl;
-    } catch (err) {
+      return json.data.publicUrl;
+    } catch (err: any) {
       console.error("Upload error", err);
-      alert("Failed to upload image");
+      alert(err.message || "Failed to upload image");
       return null;
     }
   };
