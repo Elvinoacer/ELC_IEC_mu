@@ -3,7 +3,7 @@ import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { success, error, serverError } from "@/lib/response";
 import { normalizePhone } from "@/lib/phone";
-import { maskEmail } from "@/lib/email";
+import { maskPhone } from "@/lib/phone";
 import {
   findRecentReusableOTP,
   getOTPRateLimitState,
@@ -31,14 +31,6 @@ export async function POST(req: NextRequest) {
     if (!voter)
       return error("This number isn't in the ELP voter registry.", 404);
     if (voter.hasVoted) return error("You have already cast your vote.", 409);
-
-    // Guard: voter must have a verified email
-    if (!voter.email || !voter.emailVerified) {
-      return error(
-        "No verified email on file. Please register your email before voting.",
-        403,
-      );
-    }
 
     const config = await prisma.votingConfig.findFirst({
       orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
@@ -73,24 +65,20 @@ export async function POST(req: NextRequest) {
         alreadySent: true,
         expiresAt: recentOtp.expiresAt.toISOString(),
         cooldownSeconds: Math.max(OTP_COOLDOWN_SECONDS, remainingSeconds),
-        maskedEmail: maskEmail(voter.email),
+        maskedPhone: maskPhone(normalizedPhone),
       });
     }
 
-    const { expiresAt, emailFailed } = await sendOTP(
-      normalizedPhone,
-      voter.email,
-      ipAddress,
-    );
+    const { expiresAt, smsFailed } = await sendOTP(normalizedPhone, ipAddress);
 
     return success({
       alreadySent: false,
       expiresAt: expiresAt.toISOString(),
       cooldownSeconds: OTP_COOLDOWN_SECONDS,
-      maskedEmail: maskEmail(voter.email),
-      ...(emailFailed && {
-        emailWarning:
-          "OTP created but email delivery may have failed. Try requesting a new code.",
+      maskedPhone: maskPhone(normalizedPhone),
+      ...(smsFailed && {
+        smsWarning:
+          "OTP created but SMS delivery may have failed. Try requesting a new code.",
       }),
     });
   } catch (err) {

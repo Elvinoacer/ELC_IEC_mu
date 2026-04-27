@@ -2,11 +2,12 @@
  * OTP Generation & Verification Service
  *
  * Supports two OTP flows:
- * - VOTE: Vote-day OTP sent to voter's verified email (keyed by phone)
+ * - VOTE: Vote-day OTP sent to voter's phone via SMS (keyed by phone)
  * - EMAIL_REG: Email registration OTP sent to unverified email (keyed by email)
  */
 
-import { sendEmailOTP, sendEmailVerificationOTP } from "./email";
+import { sendEmailVerificationOTP } from "./email";
+import { sendSMS } from "./sms";
 import { prisma } from "./prisma";
 import { createHash, timingSafeEqual } from "crypto";
 
@@ -115,13 +116,12 @@ export async function checkOTPRateLimit(
 }
 
 /**
- * Send a vote-day OTP. Delivers via email to the voter's verified email address.
+ * Send a vote-day OTP. Delivers via SMS to the voter's registered phone number.
  */
 export async function sendOTP(
   phone: string,
-  voterEmail: string,
   ipAddress?: string,
-): Promise<{ expiresAt: Date; emailFailed: boolean }> {
+): Promise<{ expiresAt: Date; smsFailed: boolean }> {
   const code = generateCode();
   const codeHash = hashOtp(code);
   const expiresAt = new Date(Date.now() + OTP_TTL_MS);
@@ -148,19 +148,22 @@ export async function sendOTP(
     console.log(`\n🔑 [TESTING] OTP for ${phone}: ${code}\n`);
   }
 
-  // Send email — but don't let a delivery failure crash the OTP flow.
-  let emailFailed = false;
+  // Send SMS — but don't let a delivery failure crash the OTP flow.
+  let smsFailed = false;
   try {
-    await sendEmailOTP(voterEmail, code);
-  } catch (emailErr) {
-    emailFailed = true;
+    await sendSMS(
+      phone,
+      `Your ELP Moi Chapter voting OTP is: ${code}. Valid 5 minutes. Do not share.`,
+    );
+  } catch (smsErr) {
+    smsFailed = true;
     console.error(
-      `[OTP] OTP created for ${phone} but email delivery failed:`,
-      emailErr instanceof Error ? emailErr.message : emailErr,
+      `[OTP] OTP created for ${phone} but SMS delivery failed:`,
+      smsErr instanceof Error ? smsErr.message : smsErr,
     );
   }
 
-  return { expiresAt, emailFailed };
+  return { expiresAt, smsFailed };
 }
 
 export type VerifyResult =
@@ -277,11 +280,11 @@ export async function sendEmailRegistrationOTP(
 
   // Invalidate previous unverified email-reg OTPs for this email OR this phone
   await prisma.otpRequest.updateMany({
-    where: { 
+    where: {
       OR: [
         { email, verified: false, purpose: "EMAIL_REG" },
-        { phone, verified: false, purpose: "EMAIL_REG" }
-      ]
+        { phone, verified: false, purpose: "EMAIL_REG" },
+      ],
     },
     data: { expiresAt: new Date(0) },
   });
