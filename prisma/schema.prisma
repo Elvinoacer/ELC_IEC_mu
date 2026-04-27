@@ -82,12 +82,12 @@ model Candidate {
   phone         String    @unique @db.VarChar(20)
   school        String    @db.VarChar(150)
   yearOfStudy   String    @map("year_of_study") @db.VarChar(50)
-  position      String    @db.VarChar(100)
+  position      String    @db.VarChar(100) // Denormalized title for display
+  positionId    Int       @map("position_id")
   scholarCode   String    @unique @map("scholar_code") @db.VarChar(50)
   photoUrl      String    @map("photo_url") @db.Text
   status        String    @default("PENDING") @db.VarChar(20) // PENDING | APPROVED | REJECTED
   rejectionNote String?   @map("rejection_note") @db.Text
-  votes         Int       @default(0)
   submittedAt   DateTime  @default(now()) @map("submitted_at") @db.Timestamptz
   reviewedAt    DateTime? @map("reviewed_at") @db.Timestamptz
   reviewedById  Int?      @map("reviewed_by")
@@ -95,11 +95,11 @@ model Candidate {
   // Relations
   reviewedBy  Admin?   @relation("ReviewedByAdmin", fields: [reviewedById], references: [id])
   voter       Voter    @relation("CandidateVoter", fields: [phone], references: [phone])
-  positionRef Position @relation("PositionCandidates", fields: [position], references: [title])
+  positionRef Position @relation("PositionCandidates", fields: [positionId], references: [id])
   voteRecords Vote[]   @relation("CandidateVotes")
 
-  @@unique([id, position])
-  @@index([status, position])
+  @@unique([id, positionId])
+  @@index([status, positionId])
   @@index([submittedAt])
   @@index([reviewedById])
   @@map("candidates")
@@ -111,18 +111,19 @@ model Vote {
   id          Int      @id @default(autoincrement())
   voterId     Int      @map("voter_id")
   candidateId Int      @map("candidate_id")
-  position    String   @db.VarChar(100)
+  positionId  Int      @map("position_id")
+  position    String   @db.VarChar(100) // Denormalized title for display
   castAt      DateTime @default(now()) @map("cast_at") @db.Timestamptz
 
   // Relations
   voter       Voter     @relation(fields: [voterId], references: [id])
-  candidate   Candidate @relation("CandidateVotes", fields: [candidateId, position], references: [id, position])
-  positionRef Position  @relation("PositionVotes", fields: [position], references: [title])
+  candidate   Candidate @relation("CandidateVotes", fields: [candidateId, positionId], references: [id, positionId])
+  positionRef Position  @relation("PositionVotes", fields: [positionId], references: [id])
 
   // One vote per position per voter — DB-level enforcement
-  @@unique([voterId, position])
+  @@unique([voterId, positionId])
   @@index([candidateId])
-  @@index([position])
+  @@index([positionId])
   @@index([castAt])
   @@map("votes")
 }
@@ -131,9 +132,9 @@ model Vote {
 
 model OtpRequest {
   id        Int      @id @default(autoincrement())
-  phone     String?  @db.VarChar(20)    // Null for email-registration OTPs
-  email     String?  @db.VarChar(255)   // Null for vote-day OTPs
-  code      String   @db.VarChar(10)
+  phone     String?  @db.VarChar(20) // Null for email-registration OTPs
+  email     String?  @db.VarChar(255) // Null for vote-day OTPs
+  code      String   @db.VarChar(64) // SHA-256 hex of otp + OTP_PEPPER
   sentAt    DateTime @default(now()) @map("sent_at") @db.Timestamptz
   verified  Boolean  @default(false)
   expiresAt DateTime @map("expires_at") @db.Timestamptz
@@ -157,6 +158,8 @@ model VotingConfig {
   closesAt             DateTime  @map("closes_at") @db.Timestamptz
   candidateRegOpensAt  DateTime? @map("candidate_reg_opens_at") @db.Timestamptz
   candidateRegClosesAt DateTime? @map("candidate_reg_closes_at") @db.Timestamptz
+  voterRegOpensAt      DateTime? @map("voter_reg_opens_at") @db.Timestamptz
+  voterRegClosesAt     DateTime? @map("voter_reg_closes_at") @db.Timestamptz
   isManuallyClosed     Boolean   @default(false) @map("is_manually_closed")
   updatedAt            DateTime  @default(now()) @map("updated_at") @db.Timestamptz
   updatedById          Int?      @map("updated_by")

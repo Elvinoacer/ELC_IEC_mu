@@ -31,7 +31,7 @@ export default async function VotePage() {
     if (!isOpen) redirect('/closed');
   }
 
-  const positions = await prisma.position.findMany({
+  const rawPositions = await prisma.position.findMany({
     orderBy: { displayOrder: 'asc' },
     include: {
       candidates: {
@@ -40,6 +40,9 @@ export default async function VotePage() {
       },
     },
   });
+
+  // Filter out positions with no approved candidates
+  const positions = rawPositions.filter(p => p.candidates.length > 0);
 
   return (
     <VoterShell step="vote">

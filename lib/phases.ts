@@ -14,10 +14,31 @@ export interface PhaseInfo {
   color: 'brand' | 'accent' | 'success' | 'slate';
 }
 
-export function getElectionPhase(config: any): PhaseInfo {
+export interface VotingConfig {
+  opensAt: string | Date;
+  closesAt: string | Date;
+  candidateRegOpensAt?: string | Date | null;
+  candidateRegClosesAt?: string | Date | null;
+  voterRegOpensAt?: string | Date | null;
+  voterRegClosesAt?: string | Date | null;
+  isManuallyClosed: boolean;
+  isConfigured?: boolean;
+}
+
+export function getElectionPhase(config: VotingConfig): PhaseInfo {
+  if (!config || config.isConfigured === false) {
+    return {
+      phase: 'UNKNOWN',
+      label: 'System Initializing',
+      subLabel: 'The IEC has not yet configured the election timeline.',
+      targetDate: null,
+      color: 'slate'
+    };
+  }
+
   const now = new Date();
-  const regOpen = config.candidateRegOpensAt ? new Date(config.candidateRegOpensAt) : null;
-  const regClose = config.candidateRegClosesAt ? new Date(config.candidateRegClosesAt) : null;
+  const regOpen = config.voterRegOpensAt ? new Date(config.voterRegOpensAt) : null;
+  const regClose = config.voterRegClosesAt ? new Date(config.voterRegClosesAt) : null;
   const voteOpen = new Date(config.opensAt);
   const voteClose = new Date(config.closesAt);
 

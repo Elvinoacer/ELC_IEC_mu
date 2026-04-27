@@ -11,7 +11,7 @@ interface PositionData {
 
 export default function ReviewScreen({ positions, selections, confirmed, onConfirmToggle, onSubmit, onBack, loading, error }: {
   positions: PositionData[];
-  selections: Record<string, number>;
+  selections: Record<number, number>;
   confirmed: boolean;
   onConfirmToggle: (v: boolean) => void;
   onSubmit: () => void;
@@ -23,7 +23,7 @@ export default function ReviewScreen({ positions, selections, confirmed, onConfi
     <div className="space-y-5">
       <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-200">⚠ This cannot be changed. Review carefully.</div>
       {positions.map((pos) => {
-        const selected = pos.candidates.find((c) => c.id === selections[pos.title]);
+        const selected = pos.candidates.find((c) => c.id === selections[pos.id]);
         return (
           <div key={pos.id} className="flex items-center justify-between border-b border-white/5 py-2">
             <p className="text-sm text-slate-300">{pos.title}</p>

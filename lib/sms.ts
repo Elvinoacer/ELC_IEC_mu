@@ -123,8 +123,8 @@ export async function sendSMS(to: string, message: string): Promise<void> {
   }
 
   // Build options — NEVER include senderId/from unless you have an approved one
-  // Using 'any' because the AT SDK type definitions require 'from' but it's actually optional
-  const options: any = {
+  // Using Record<string, unknown> because the AT SDK type definitions require 'from' but it's actually optional
+  const options: Record<string, unknown> = {
     to: [to],
     message,
     enqueue: true,
@@ -283,12 +283,15 @@ export async function trySendSMS(to: string, message: string): Promise<boolean> 
 /**
  * Extract the first recipient from AT's response, handling various response shapes.
  */
-function extractRecipient(result: any): ATRecipient | null {
+function extractRecipient(result: unknown): ATRecipient | null {
+  if (!result || typeof result !== 'object') return null;
+  const res = result as Partial<ATSendResult> & Record<string, unknown>;
+  
   // Standard shape: result.SMSMessageData.Recipients[0]
   const recipients =
-    result?.SMSMessageData?.Recipients ||
-    result?.SMSMessageData?.recipients ||
-    result?.recipients;
+    res?.SMSMessageData?.Recipients ||
+    (res as Record<string, unknown>)?.SMSMessageData?.recipients ||
+    (res as Record<string, unknown>)?.recipients;
 
   if (Array.isArray(recipients) && recipients.length > 0) {
     return recipients[0] as ATRecipient;

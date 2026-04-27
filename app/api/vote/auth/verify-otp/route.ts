@@ -11,7 +11,7 @@ import { signVoterToken } from '@/lib/jwt';
 const verifySchema = z.object({
   phone: z.string().min(1),
   code: z.string().length(6, 'OTP must be 6 digits'),
-  deviceHash: z.string().min(1, 'Device fingerprint missing'),
+  deviceHash: z.string().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -50,11 +50,13 @@ export async function POST(req: NextRequest) {
 
     let deviceWarning = false;
 
-    if (!voter.deviceHash) {
-      await prisma.voter.update({ where: { id: voter.id }, data: { deviceHash } });
-    } else if (voter.deviceHash !== deviceHash) {
-      deviceWarning = true;
-      await prisma.voter.update({ where: { id: voter.id }, data: { deviceHash } });
+    if (deviceHash) {
+      if (!voter.deviceHash) {
+        await prisma.voter.update({ where: { id: voter.id }, data: { deviceHash } });
+      } else if (voter.deviceHash !== deviceHash) {
+        deviceWarning = true;
+        await prisma.voter.update({ where: { id: voter.id }, data: { deviceHash } });
+      }
     }
 
     const token = await signVoterToken(normalizedPhone, voter.id);

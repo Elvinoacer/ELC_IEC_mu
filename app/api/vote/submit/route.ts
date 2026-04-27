@@ -9,9 +9,9 @@ import { logVoteAttempt } from '@/lib/audit';
 import { tryEmailSend, templateVoteConfirmation } from '@/lib/email';
 
 const submitSchema = z.object({
-  deviceHash: z.string().min(1, 'Device fingerprint missing'),
+  deviceHash: z.string().optional(),
   selections: z.array(z.object({
-    position: z.string(),
+    positionId: z.number(),
     candidateId: z.number(),
   })).min(1, 'You must vote for at least one position'),
 });
@@ -41,17 +41,42 @@ export async function POST(req: NextRequest) {
     deviceHashStr = deviceHash;
 
     // Validation: Check for duplicate positions or candidates in the same payload
-    const seenPositions = new Set<string>();
+    const seenPositionIds = new Set<number>();
     const seenCandidates = new Set<number>();
     for (const sel of selections) {
-      if (seenPositions.has(sel.position)) {
-        return error(`Multiple selections detected for the same position: ${sel.position}`, 400);
+      if (seenPositionIds.has(sel.positionId)) {
+        return error(`Multiple selections detected for the same position ID: ${sel.positionId}`, 400);
       }
       if (seenCandidates.has(sel.candidateId)) {
         return error(`Duplicate candidate selected across positions: ${sel.candidateId}`, 400);
       }
-      seenPositions.add(sel.position);
+      seenPositionIds.add(sel.positionId);
       seenCandidates.add(sel.candidateId);
+    }
+
+    // [FIX] Require exactly one selection for every active position
+    const activePositions = await prisma.position.findMany({
+      where: {
+        candidates: {
+          some: { status: 'APPROVED' }
+        }
+      },
+      select: { id: true, title: true }
+    });
+
+    const activeIds = activePositions.map(p => p.id);
+    
+    // Check if any active positions are missing from the selections
+    const missingIds = activeIds.filter(id => !seenPositionIds.has(id));
+    if (missingIds.length > 0) {
+      const missingTitles = activePositions.filter(p => missingIds.includes(p.id)).map(p => p.title);
+      return error(`Incomplete ballot. You must vote for all positions: ${missingTitles.join(', ')}`, 400);
+    }
+
+    // Check if any selections are for positions that aren't active or don't exist
+    const invalidIds = Array.from(seenPositionIds).filter(id => !activeIds.includes(id));
+    if (invalidIds.length > 0) {
+      return error(`Invalid positions detected in ballot (IDs): ${invalidIds.join(', ')}`, 400);
     }
 
     // 2. Transaction: Lock voter, verify not voted, cast votes, update stats
@@ -77,10 +102,10 @@ export async function POST(req: NextRequest) {
         if (now > config.closesAt) throw new Error('VOTING_ALREADY_CLOSED');
       }
 
-      // Device Integrity Check
-      // If the voter already had a device hash stored (from login), it MUST match what they are submitting now.
-      if (dbVoter.device_hash && dbVoter.device_hash !== deviceHash) {
-        throw new Error('DEVICE_MISMATCH');
+      // Device Integrity Heuristics
+      const isDeviceMismatch = dbVoter.device_hash && deviceHash && dbVoter.device_hash !== deviceHash;
+      if (isDeviceMismatch) {
+        console.warn(`[VOTE_SIGNAL] Device mismatch for voter ${voterId}. Expected: ${dbVoter.device_hash}, Got: ${deviceHash}`);
       }
 
       // Verify each candidate is approved and matches the position
@@ -91,21 +116,16 @@ export async function POST(req: NextRequest) {
         
         if (!candidate) throw new Error(`INVALID_CANDIDATE_${sel.candidateId}`);
         if (candidate.status !== 'APPROVED') throw new Error(`CANDIDATE_NOT_APPROVED_${sel.candidateId}`);
-        if (candidate.position !== sel.position) throw new Error(`POSITION_MISMATCH_${sel.candidateId}`);
+        if (candidate.positionId !== sel.positionId) throw new Error(`POSITION_MISMATCH_${sel.candidateId}`);
 
         // Insert vote
         await tx.vote.create({
           data: {
             voterId: voterId!,
             candidateId: sel.candidateId,
-            position: sel.position,
+            positionId: sel.positionId,
+            position: candidate.position, // denormalize title at time of vote
           }
-        });
-
-        // Increment candidate votes
-        await tx.candidate.update({
-          where: { id: sel.candidateId },
-          data: { votes: { increment: 1 } }
         });
       }
 
@@ -153,34 +173,32 @@ export async function POST(req: NextRequest) {
     res.headers.set('Set-Cookie', clearCookie);
     return res;
 
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
     let status: 'SUCCESS' | 'FAILED' | 'DUPLICATE' | 'OUTSIDE_WINDOW' = 'FAILED';
-    if (err.message === 'ALREADY_VOTED') status = 'DUPLICATE';
-    if (err.message?.startsWith('VOTING_')) status = 'OUTSIDE_WINDOW';
+    if (errorMsg === 'ALREADY_VOTED') status = 'DUPLICATE';
+    if (errorMsg?.startsWith('VOTING_')) status = 'OUTSIDE_WINDOW';
 
     await logVoteAttempt(req, status, { 
       voterId: voterId, 
       phone: phone, 
       deviceHash: deviceHashStr,
-      reason: err.message 
+      reason: errorMsg 
     });
 
-    if (err.message === 'ALREADY_VOTED') {
+    if (errorMsg === 'ALREADY_VOTED') {
       return error('You have already cast your vote.', 409);
     }
-    if (err.message === 'DEVICE_MISMATCH') {
-      return error('Device mismatch detected. Your session may have been compromised.', 403);
-    }
-    if (err.message === 'VOTING_CLOSED_MANUALLY') return error('Voting has been manually closed by the IEC.', 403);
-    if (err.message === 'VOTING_NOT_STARTED') return error('Voting has not started yet.', 403);
-    if (err.message === 'VOTING_ALREADY_CLOSED') return error('Voting has already closed.', 403);
+    if (errorMsg === 'VOTING_CLOSED_MANUALLY') return error('Voting has been manually closed by the IEC.', 403);
+    if (errorMsg === 'VOTING_NOT_STARTED') return error('Voting has not started yet.', 403);
+    if (errorMsg === 'VOTING_ALREADY_CLOSED') return error('Voting has already closed.', 403);
 
-    if (err.message?.startsWith('INVALID_CANDIDATE') || err.message?.startsWith('CANDIDATE_NOT_APPROVED') || err.message?.startsWith('POSITION_MISMATCH')) {
+    if (errorMsg?.startsWith('INVALID_CANDIDATE') || errorMsg?.startsWith('CANDIDATE_NOT_APPROVED') || errorMsg?.startsWith('POSITION_MISMATCH')) {
       return error('Invalid candidate selection detected. Please refresh and try again.', 400);
     }
     
     // Prisma unique constraint violation (P2002) for votes means they already voted for this position
-    if (err.code === 'P2002') {
+    if (err && typeof err === 'object' && 'code' in err && err.code === 'P2002') {
       return error('Duplicate vote detected.', 409);
     }
     return serverError(err);

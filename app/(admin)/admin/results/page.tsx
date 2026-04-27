@@ -12,13 +12,14 @@ export default function AdminResultsPage() {
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
+    const fetchAdminResults = async () => {
+      const res = await fetch('/api/admin/results');
+      const json = await res.json();
+      if (json.data) setData(json.data);
+    };
+
     // 1. Fetch initial snapshot
-    fetch('/api/results')
-      .then(res => res.json())
-      .then(json => {
-        if (json.data) setData(json.data);
-      })
-      .finally(() => setLoading(false));
+    fetchAdminResults().finally(() => setLoading(false));
 
     // 2. Connect to Socket.IO for live updates
     const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001/results';
@@ -29,7 +30,9 @@ export default function AdminResultsPage() {
 
     socket.on('connect', () => setIsConnected(true));
     socket.on('disconnect', () => setIsConnected(false));
-    socket.on('vote_cast', (payload: ResultsPayload) => setData(payload));
+    socket.on('vote_cast', () => {
+      void fetchAdminResults();
+    });
 
     return () => {
       socket.disconnect();

@@ -9,7 +9,7 @@ import Input from '@/components/ui/Input';
 import { normalizePhone } from '@/lib/phone';
 import Link from 'next/link';
 
-type Step = 'PHONE' | 'EMAIL_ENTRY' | 'OTP_VERIFY' | 'SUCCESS';
+type Step = 'PHONE' | 'EMAIL_ENTRY' | 'OTP_VERIFY' | 'SUCCESS' | 'ALREADY_REGISTERED';
 
 export default function EmailRegistrationCard() {
   const [step, setStep] = useState<Step>('PHONE');
@@ -19,7 +19,8 @@ export default function EmailRegistrationCard() {
   const [maskedEmail, setMaskedEmail] = useState('');
   const [otp, setOtp] = useState<string[]>(Array(6).fill(''));
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
-  const [cooldownSeconds, setCooldownSeconds] = useState(60);
+  const [cooldownUntil, setCooldownUntil] = useState<number>(0);
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [isAlreadyRegistered, setIsAlreadyRegistered] = useState(false);
@@ -27,12 +28,16 @@ export default function EmailRegistrationCard() {
   const otpCode = useMemo(() => otp.join(''), [otp]);
 
   useEffect(() => {
-    if (!expiresAt) return;
+    if (cooldownUntil <= 0) return;
+    
     const interval = setInterval(() => {
-      setCooldownSeconds((prev) => Math.max(0, prev - 1));
-    }, 1000);
+      const remaining = Math.max(0, Math.ceil((cooldownUntil - Date.now()) / 1000));
+      setCooldownSeconds(remaining);
+      if (remaining <= 0) clearInterval(interval);
+    }, 500);
+
     return () => clearInterval(interval);
-  }, [expiresAt]);
+  }, [cooldownUntil]);
 
   const handlePhoneContinue = async () => {
     const parsed = normalizePhone(localPhone);
@@ -65,7 +70,7 @@ export default function EmailRegistrationCard() {
       if (data.isRegistered) {
         setMaskedEmail(data.maskedEmail);
         setIsAlreadyRegistered(true);
-        setStep('SUCCESS');
+        setStep('ALREADY_REGISTERED');
       } else {
         setIsAlreadyRegistered(false);
         setStep('EMAIL_ENTRY');
@@ -104,7 +109,9 @@ export default function EmailRegistrationCard() {
       const data = json.data;
       setMaskedEmail(data.maskedEmail || email);
       setExpiresAt(data.expiresAt);
-      setCooldownSeconds(data.cooldownSeconds ?? 60);
+      const seconds = data.cooldownSeconds ?? 60;
+      setCooldownUntil(Date.now() + seconds * 1000);
+      setCooldownSeconds(seconds);
       setOtp(Array(6).fill(''));
       setStep('OTP_VERIFY');
     } catch {
@@ -165,7 +172,9 @@ export default function EmailRegistrationCard() {
 
       const data = json.data;
       setExpiresAt(data.expiresAt);
-      setCooldownSeconds(data.cooldownSeconds ?? 60);
+      const seconds = data.cooldownSeconds ?? 60;
+      setCooldownUntil(Date.now() + seconds * 1000);
+      setCooldownSeconds(seconds);
       setOtp(Array(6).fill(''));
     } catch {
       setError('Network error. Please try again.');
@@ -264,29 +273,59 @@ export default function EmailRegistrationCard() {
 
       {step === 'SUCCESS' && (
         <div className="space-y-6 text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-accent-500/15 border border-accent-500/30">
-            <svg className="h-8 w-8 text-accent-400" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-success-500/15 border border-success-500/30">
+            <svg className="h-8 w-8 text-success-400" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
             </svg>
           </div>
 
           <div>
-            <h2 className="text-lg font-bold text-white mb-2">
-              {isAlreadyRegistered ? 'Account Secure' : 'Email Verified!'}
-            </h2>
+            <h2 className="text-lg font-bold text-white mb-2">Registration Complete!</h2>
             <p className="text-sm text-slate-300">
-              {isAlreadyRegistered 
-                ? 'Your account is already linked to a verified email address.'
-                : 'Your email has been verified and linked to your voter account.'}
+              Your email has been verified and successfully linked to your voter account.
             </p>
             {maskedEmail && (
               <div className="mt-4 p-3 rounded-xl bg-white/5 border border-white/10">
-                <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Associated Email</p>
+                <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Registered Email</p>
                 <p className="text-sm font-bold text-white">{maskedEmail}</p>
               </div>
             )}
             <p className="text-xs text-slate-400 mt-4 leading-relaxed">
               On election day, your secure voting OTP will be sent to this email address.
+            </p>
+          </div>
+
+          <div className="pt-2">
+            <Link href="/" className="w-full">
+              <Button variant="outline" className="w-full border-white/10 hover:bg-white/5">
+                Return to Home
+              </Button>
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {step === 'ALREADY_REGISTERED' && (
+        <div className="space-y-6 text-center">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-accent-500/15 border border-accent-500/30">
+            <svg className="h-8 w-8 text-accent-400" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+
+          <div>
+            <h2 className="text-lg font-bold text-white mb-2">Already Secured</h2>
+            <p className="text-sm text-slate-300">
+              This voter account is already linked to a verified email address. No further action is required.
+            </p>
+            {maskedEmail && (
+              <div className="mt-4 p-3 rounded-xl bg-white/5 border border-white/10">
+                <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Current Email</p>
+                <p className="text-sm font-bold text-white">{maskedEmail}</p>
+              </div>
+            )}
+            <p className="text-xs text-slate-400 mt-4 leading-relaxed">
+              If you need to change this email, please contact the IEC administrators.
             </p>
           </div>
 

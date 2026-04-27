@@ -19,7 +19,8 @@ export default function AuthCard({ onAlreadyVoted }: { onAlreadyVoted?: () => vo
   const [maskedEmail, setMaskedEmail] = useState<string | null>(null);
   const [otp, setOtp] = useState<string[]>(Array(6).fill(''));
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
-  const [cooldownSeconds, setCooldownSeconds] = useState(60);
+  const [cooldownUntil, setCooldownUntil] = useState<number>(0);
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
   const [attemptsLeft, setAttemptsLeft] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [noEmailError, setNoEmailError] = useState(false);
@@ -63,12 +64,16 @@ export default function AuthCard({ onAlreadyVoted }: { onAlreadyVoted?: () => vo
   }, [router]);
 
   useEffect(() => {
-    if (!expiresAt) return;
+    if (cooldownUntil <= 0) return;
+    
     const interval = setInterval(() => {
-      setCooldownSeconds((prev) => Math.max(0, prev - 1));
-    }, 1000);
+      const remaining = Math.max(0, Math.ceil((cooldownUntil - Date.now()) / 1000));
+      setCooldownSeconds(remaining);
+      if (remaining <= 0) clearInterval(interval);
+    }, 500);
+
     return () => clearInterval(interval);
-  }, [expiresAt]);
+  }, [cooldownUntil]);
 
   const sendOtp = async () => {
     const parsed = normalizePhone(localPhone);
@@ -112,7 +117,9 @@ export default function AuthCard({ onAlreadyVoted }: { onAlreadyVoted?: () => vo
     setNormalizedPhone(parsed);
     setMaskedEmail(data.maskedEmail || null);
     setExpiresAt(data.expiresAt);
-    setCooldownSeconds(data.cooldownSeconds ?? 60);
+    const seconds = data.cooldownSeconds ?? 60;
+    setCooldownUntil(Date.now() + seconds * 1000);
+    setCooldownSeconds(seconds);
     setOtp(Array(6).fill(''));
     if (data.alreadySent) {
       setError('A valid OTP is already active for this number. Please use the code already sent.');
@@ -201,7 +208,7 @@ export default function AuthCard({ onAlreadyVoted }: { onAlreadyVoted?: () => vo
             </p>
           )}
           <div className="grid grid-cols-2 gap-2 sm:gap-3">
-            <Button className="flex-1 min-h-10 sm:min-h-12" loading={loading} onClick={() => verifyOtp(otpCode)} disabled={otpCode.length !== 6 || !fingerprint}>Verify Code</Button>
+            <Button className="flex-1 min-h-10 sm:min-h-12" loading={loading} onClick={() => verifyOtp(otpCode)} disabled={otpCode.length !== 6}>Verify Code</Button>
             <Button
               variant="outline"
               type="button"

@@ -4,7 +4,7 @@ import prisma from '@/lib/prisma';
 import { success, error, serverError } from '@/lib/response';
 
 const schema = z.object({
-  deviceHash: z.string().min(1, 'Device fingerprint missing'),
+  deviceHash: z.string().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -14,9 +14,14 @@ export async function POST(req: NextRequest) {
 
     if (!parsed.success) return error(parsed.error.issues[0].message, 400);
 
+    const { deviceHash } = parsed.data;
+    if (!deviceHash) {
+      return success({ hasVotedOnThisDevice: false });
+    }
+
     const voter = await prisma.voter.findFirst({
       where: {
-        deviceHash: parsed.data.deviceHash,
+        deviceHash,
         hasVoted: true,
       },
       select: { id: true },

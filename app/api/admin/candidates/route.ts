@@ -19,7 +19,7 @@ const createCandidateSchema = z.object({
     "6th Year",
     "Postgraduate",
   ]),
-  position: z.string().trim().min(2).max(100),
+  positionId: z.number().int().positive(),
   scholarCode: z.string().trim().min(2).max(50),
   photoUrl: z.string().trim().url("Photo URL must be a valid URL"),
   status: z.enum(["PENDING", "APPROVED"]).default("APPROVED"),
@@ -41,6 +41,9 @@ export async function GET(req: NextRequest) {
       include: {
         reviewedBy: {
           select: { username: true },
+        },
+        _count: {
+          select: { voteRecords: true },
         },
       },
     });
@@ -69,7 +72,7 @@ export async function POST(req: NextRequest) {
 
     const [voter, positionRef] = await Promise.all([
       prisma.voter.findUnique({ where: { phone: normalizedPhone } }),
-      prisma.position.findUnique({ where: { title: result.data.position } }),
+      prisma.position.findUnique({ where: { id: result.data.positionId } }),
     ]);
 
     if (!voter) {
@@ -87,7 +90,7 @@ export async function POST(req: NextRequest) {
       name,
       school,
       yearOfStudy,
-      position,
+      positionId,
       scholarCode,
       photoUrl,
       status,
@@ -100,7 +103,8 @@ export async function POST(req: NextRequest) {
         phone: normalizedPhone,
         school,
         yearOfStudy,
-        position,
+        positionId,
+        position: positionRef.title, // Populating the denormalized title
         scholarCode,
         photoUrl,
         status,

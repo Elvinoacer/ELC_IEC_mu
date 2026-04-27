@@ -68,10 +68,27 @@ export async function PATCH(
       const normalizedName = typeof name === "string" ? name.trim() : "";
       const emailValue = typeof body.email === "string" ? body.email.trim() : undefined;
 
-      const updateData: any = { name: normalizedName || null };
+      const updateData: { 
+        name: string | null; 
+        email?: string | null; 
+        emailVerified?: boolean; 
+      } = { name: normalizedName || null };
 
       // If email is being changed, reset emailVerified
       if (emailValue !== undefined) {
+        // [SECURITY] Restrict email changes: Only SUPER_ADMIN can do it freely.
+        // Others must provide a reason.
+        if (auth.admin.role !== "SUPER_ADMIN") {
+          const reason = typeof body.reason === "string" ? body.reason.trim() : "";
+          if (reason.length < 5) {
+            return error(
+              "Changing a voter's email requires a valid reason (min 5 chars) for audit review.",
+              400
+            );
+          }
+          (updateData as any).emailUpdateReason = reason; // Note: we don't store this on Voter, but it's in the audit log
+        }
+
         if (emailValue === "") {
           updateData.email = null;
           updateData.emailVerified = false;
@@ -90,10 +107,14 @@ export async function PATCH(
 
       await prisma.voter.update({
         where: { id: voterId },
-        data: updateData,
+        data: {
+          name: updateData.name,
+          email: updateData.email,
+          emailVerified: updateData.emailVerified,
+        },
       });
 
-      const auditDetails: any = {
+      const auditDetails: Record<string, unknown> = {
         phone: voter.phone,
         oldName: voter.name,
         newName: normalizedName || null,
@@ -102,6 +123,7 @@ export async function PATCH(
         auditDetails.oldEmail = voter.email;
         auditDetails.newEmail = emailValue || null;
         auditDetails.emailVerifiedReset = true;
+        auditDetails.reason = body.reason || "SUPER_ADMIN Action";
       }
 
       await logAudit(req, auth.admin.id, emailValue !== undefined ? "ADMIN_UPDATE_VOTER_EMAIL" : "EDIT_VOTER", "Voter", voterId, auditDetails);
@@ -112,10 +134,7 @@ export async function PATCH(
     if (action === "reset") {
       const reason = typeof body.reason === "string" ? body.reason.trim() : "";
       if (reason.length < 5) {
-        return error(
-          "A valid reason (min 5 chars) is required for resetting a voter.",
-          400,
-        );
+        return error("A reset reason (min 5 chars) is required.", 400);
       }
 
       // Role restriction: Only SUPER_ADMIN can reset a voter
@@ -126,26 +145,17 @@ export async function PATCH(
         );
       }
 
-      // Capture current votes before deletion for both audit and counter fixes.
+      // Capture current votes before deletion for audit trail
       const currentVotes = await prisma.vote.findMany({
         where: { voterId },
         include: {
-          candidate: { select: { id: true, name: true, position: true } },
+          candidate: { select: { name: true, position: true } },
         },
       });
 
-      const affectedCandidateIds = Array.from(
-        new Set(currentVotes.map((vote) => vote.candidateId)),
-      );
-
-      const updatedCandidateCounts: { candidateId: number; votes: number }[] =
-        [];
-
+      // Transaction: Delete votes and reset voter status
       await prisma.$transaction(async (tx) => {
-        await tx.vote.deleteMany({
-          where: { voterId },
-        });
-
+        await tx.vote.deleteMany({ where: { voterId } });
         await tx.voter.update({
           where: { id: voterId },
           data: {
@@ -154,30 +164,27 @@ export async function PATCH(
             deviceHash: null,
           },
         });
-
-        for (const candidateId of affectedCandidateIds) {
-          const actualVotes = await tx.vote.count({
-            where: { candidateId },
-          });
-
-          await tx.candidate.update({
-            where: { id: candidateId },
-            data: { votes: actualVotes },
-          });
-
-          updatedCandidateCounts.push({ candidateId, votes: actualVotes });
-        }
       });
 
-      await logAudit(req, auth.admin.id, "RESET_VOTER", "Voter", voterId, {
+      const auditDetails: Record<string, unknown> = {
         phone: voter.phone,
+        name: voter.name,
+        resetBy: auth.admin.username,
         reason,
         deletedVotes: currentVotes.map((v) => ({
           position: v.position,
           candidate: v.candidate.name,
         })),
-        candidateVoteRecalculation: updatedCandidateCounts,
-      });
+      };
+
+      await logAudit(
+        req,
+        auth.admin.id,
+        "RESET_VOTER",
+        "Voter",
+        voterId,
+        auditDetails,
+      );
 
       return success({ message: "Voter has been reset successfully" });
     }

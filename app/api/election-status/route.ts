@@ -11,21 +11,23 @@ export async function GET(req: NextRequest) {
         closesAt: true,
         candidateRegOpensAt: true,
         candidateRegClosesAt: true,
+        voterRegOpensAt: true,
+        voterRegClosesAt: true,
         isManuallyClosed: true,
       }
     });
     
     if (!config) {
       return success({ 
-        opensAt: new Date(), 
-        closesAt: new Date(Date.now() + 86400000),
-        candidateRegOpensAt: null,
-        candidateRegClosesAt: null,
+        isConfigured: false,
         isManuallyClosed: false
       });
     }
-
-    return success(config);
+    
+    return success({ 
+      ...config, 
+      isConfigured: true 
+    });
   } catch (err) {
     return serverError(err);
   }

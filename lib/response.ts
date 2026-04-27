@@ -14,7 +14,7 @@ import { NextResponse } from "next/server";
 export interface ApiSuccess<T = unknown> {
   ok: true;
   data: T;
-  meta?: any;
+  meta?: Record<string, unknown>;
 }
 
 export interface ApiError {
@@ -30,7 +30,7 @@ export type ApiResponse<T = unknown> = ApiSuccess<T> | ApiError;
 export function success<T>(
   data: T,
   status = 200,
-  meta?: any,
+  meta?: Record<string, unknown>,
 ): NextResponse<ApiSuccess<T>> {
   return NextResponse.json(
     {

@@ -1,5 +1,7 @@
 import PublicShell from '@/components/layouts/PublicShell';
 
+import Link from 'next/link';
+
 export const metadata = { title: 'Not Registered — ELP Moi Chapter' };
 
 export default function NotRegisteredPage() {
@@ -18,7 +20,7 @@ export default function NotRegisteredPage() {
           This phone number is not registered in the ELP voter registry. 
           Please contact the IEC if you believe this is an error.
         </p>
-        <a
+        <Link
           href="/"
           className="inline-flex items-center gap-2 text-sm text-brand-400 hover:text-brand-300 transition-colors"
         >
@@ -26,7 +28,7 @@ export default function NotRegisteredPage() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
           </svg>
           Back to Home
-        </a>
+        </Link>
       </div>
     </PublicShell>
   );

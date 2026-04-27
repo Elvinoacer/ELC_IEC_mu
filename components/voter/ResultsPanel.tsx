@@ -22,20 +22,44 @@ interface ResultsPayload {
   }>;
   turnout: { voted: number; total: number; percentage: number };
   isOpen: boolean;
+  showCandidateResults: boolean;
   closesAt: string | null;
 }
 
 export default function ResultsPanel({ initialData, compact = false }: { initialData: ResultsPayload | null; compact?: boolean }) {
   const [data, setData] = useState<ResultsPayload | null>(initialData);
   const [connected, setConnected] = useState(false);
+  const [socketError, setSocketError] = useState<string | null>(null);
 
   useEffect(() => {
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL;
+    const isProd = process.env.NODE_ENV === 'production';
+
+    if (isProd && !socketUrl) {
+      console.error('CRITICAL: NEXT_PUBLIC_SOCKET_URL is not defined in production.');
+      setSocketError('Real-time connection misconfigured (missing URL).');
+      return;
+    }
+
     let socket: Socket | null = null;
     const timer = setTimeout(() => {
-      socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001/results', {
+      socket = io(socketUrl || 'http://localhost:3001/results', {
         transports: ['websocket', 'polling'],
+        reconnectionAttempts: 10,
+        reconnectionDelay: 2000,
       });
-      socket.on('connect', () => setConnected(true));
+
+      socket.on('connect', () => {
+        setConnected(true);
+        setSocketError(null);
+      });
+
+      socket.on('connect_error', (err) => {
+        console.error('Socket connection error:', err);
+        setConnected(false);
+        setSocketError('Reconnecting to live feed...');
+      });
+
       socket.on('disconnect', () => setConnected(false));
       socket.on('vote_cast', (payload: ResultsPayload) => setData(payload));
     }, 300);
@@ -47,12 +71,22 @@ export default function ResultsPanel({ initialData, compact = false }: { initial
   }, []);
 
   const positions = useMemo(() => data?.positions ?? [], [data]);
+  const showCandidateResults = data?.showCandidateResults ?? true;
 
   return (
     <Card padding="lg" className="h-full border-white/15 bg-gradient-to-br from-surface-800/80 via-surface-900/75 to-surface-900/70 backdrop-blur-xl shadow-[0_24px_60px_rgba(2,6,23,0.55)] p-3 sm:p-6">
       <div className="mb-3 sm:mb-4 flex items-center justify-between gap-2">
         <h3 className="text-sm sm:text-lg font-bold text-white">Live Results</h3>
-        <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs ${connected ? 'bg-success-500/10 text-success-300' : 'bg-slate-500/10 text-slate-400'}`}>{connected ? '🟢 Live' : '⚪ Offline'}</span>
+        <div className="flex flex-col items-end">
+          <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs ${connected ? 'bg-success-500/10 text-success-300' : 'bg-slate-500/10 text-slate-400'}`}>
+            {connected ? '🟢 Live' : '⚪ Offline'}
+          </span>
+          {socketError && (
+            <span className="text-[10px] text-amber-400 mt-1 font-medium animate-pulse">
+              {socketError}
+            </span>
+          )}
+        </div>
       </div>
 
       {data && (
@@ -60,6 +94,15 @@ export default function ResultsPanel({ initialData, compact = false }: { initial
           Turnout <span className="font-semibold text-white">{data.turnout.percentage}%</span> ({data.turnout.voted}/{data.turnout.total})
         </div>
       )}
+
+      {!showCandidateResults && (
+        <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-xs sm:text-sm text-slate-300">
+          Candidate-level tallies are hidden while polls are open. Turnout remains visible in real time.
+        </div>
+      )}
+
+      {showCandidateResults && (
+        <>
 
         {positions.map((position, pIdx) => {
           const candidates = compact ? position.candidates.slice(0, 3) : position.candidates;
@@ -130,6 +173,8 @@ export default function ResultsPanel({ initialData, compact = false }: { initial
             </div>
           );
         })}
+        </>
+      )}
     </Card>
   );
 }

@@ -1,5 +1,11 @@
-// Client-side fingerprinting utility
-
+/**
+ * Client-side fingerprinting utility.
+ * 
+ * NOTE: This is used as a secondary fraud detection signal (heuristics), 
+ * NOT as a hard security guarantee. Browser fingerprints can change due to 
+ * updates, privacy settings, or spoofing. The primary security remains 
+ * the OTP verification and HTTP-only session tokens.
+ */
 export async function generateDeviceFingerprint(): Promise<string> {
   if (typeof window === 'undefined' || typeof navigator === 'undefined') {
     return 'server-side'; // Should only be run on client

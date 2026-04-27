@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import AdminShell from '@/components/layouts/AdminShell';
 import Card from '@/components/ui/Card';
-import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 
 // Helper to format date for datetime-local input (YYYY-MM-DDThh:mm)
@@ -24,6 +23,8 @@ export default function AdminConfigPage() {
   const [closesAt, setClosesAt] = useState('');
   const [regOpensAt, setRegOpensAt] = useState('');
   const [regClosesAt, setRegClosesAt] = useState('');
+  const [voterRegOpensAt, setVoterRegOpensAt] = useState('');
+  const [voterRegClosesAt, setVoterRegClosesAt] = useState('');
   const [isManuallyClosed, setIsManuallyClosed] = useState(false);
 
   useEffect(() => {
@@ -36,9 +37,11 @@ export default function AdminConfigPage() {
           setClosesAt(toLocalISOString(json.data.closesAt));
           setRegOpensAt(toLocalISOString(json.data.candidateRegOpensAt));
           setRegClosesAt(toLocalISOString(json.data.candidateRegClosesAt));
+          setVoterRegOpensAt(toLocalISOString(json.data.voterRegOpensAt));
+          setVoterRegClosesAt(toLocalISOString(json.data.voterRegClosesAt));
           setIsManuallyClosed(json.data.isManuallyClosed);
         }
-      } catch (err) {
+      } catch {
         setError('Failed to load configuration');
       } finally {
         setLoading(false);
@@ -59,6 +62,8 @@ export default function AdminConfigPage() {
         closesAt: closesAt ? new Date(closesAt).toISOString() : undefined,
         candidateRegOpensAt: regOpensAt ? new Date(regOpensAt).toISOString() : null,
         candidateRegClosesAt: regClosesAt ? new Date(regClosesAt).toISOString() : null,
+        voterRegOpensAt: voterRegOpensAt ? new Date(voterRegOpensAt).toISOString() : null,
+        voterRegClosesAt: voterRegClosesAt ? new Date(voterRegClosesAt).toISOString() : null,
         isManuallyClosed,
       };
 
@@ -177,7 +182,39 @@ export default function AdminConfigPage() {
                       />
                     </div>
                   </div>
-                  <p className="text-xs text-slate-500 mt-2 italic">If left blank, candidate registration will follow the default system rules.</p>
+                  <p className="text-xs text-slate-500 mt-2 italic">Controls when the public candidate application form is active.</p>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between border-b border-glass-border pb-2 mb-4">
+                    <h2 className="text-lg font-bold text-white">Voter Email Registration Window</h2>
+                    <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-brand-500/10 border border-brand-500/20">
+                      <span className="w-2 h-2 rounded-full bg-brand-500 animate-pulse"></span>
+                      <span className="text-[10px] font-bold text-brand-400 uppercase tracking-widest">Phase 2</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-slate-300">Voter Reg Opens</label>
+                      <input 
+                        type="datetime-local" 
+                        value={voterRegOpensAt}
+                        onChange={(e) => setVoterRegOpensAt(e.target.value)}
+                        className="w-full px-4 py-3 bg-surface-900 border border-glass-border rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-slate-300">Voter Reg Closes</label>
+                      <input 
+                        type="datetime-local" 
+                        value={voterRegClosesAt}
+                        onChange={(e) => setVoterRegClosesAt(e.target.value)}
+                        className="w-full px-4 py-3 bg-surface-900 border border-glass-border rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-2 italic">Controls when voters can link their email to their account.</p>
                 </div>
 
                 <div>

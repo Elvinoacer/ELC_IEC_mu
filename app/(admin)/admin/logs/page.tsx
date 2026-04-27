@@ -10,7 +10,7 @@ interface AuditLog {
   action: string;
   entity: string;
   entityId: string;
-  details: any;
+  details: Record<string, unknown>;
   ipAddress: string;
   createdAt: string;
   admin?: {
@@ -41,7 +41,10 @@ export default function LogsPage() {
   };
 
   useEffect(() => {
-    fetchLogs(page);
+    const init = async () => {
+      await fetchLogs(page);
+    };
+    init();
   }, [page]);
 
   return (

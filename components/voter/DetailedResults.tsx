@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import Image from 'next/image';
 import { io, Socket } from 'socket.io-client';
 import type { ResultsPayload } from '@/lib/results';
 
@@ -30,6 +31,7 @@ export default function DetailedResults({ initialData, hasAlreadyVoted = false }
 
   const positions = useMemo(() => data?.positions ?? [], [data]);
   const turnout = useMemo(() => data?.turnout ?? { voted: 0, total: 0, percentage: 0 }, [data]);
+  const showCandidateResults = data?.showCandidateResults ?? true;
 
   // Calculate circular progress offset
   const circumference = 2 * Math.PI * 58;
@@ -133,6 +135,15 @@ export default function DetailedResults({ initialData, hasAlreadyVoted = false }
       </div>
 
       {/* Live Results Bento Grid */}
+      {!showCandidateResults && (
+        <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 sm:p-8 text-center mb-4">
+          <p className="text-sm sm:text-base text-slate-300">
+            Candidate-level vote counts are hidden while polls are open. Only turnout statistics are visible in real time.
+          </p>
+        </div>
+      )}
+
+      {showCandidateResults && (
       <div className="grid grid-cols-1 min-[400px]:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
         {positions.map((position) => (
           <div key={position.id} className="group/card bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2rem] overflow-hidden flex flex-col shadow-2xl transition-all duration-500 hover:border-brand-500/30 hover:bg-white/[0.07]">
@@ -156,10 +167,13 @@ export default function DetailedResults({ initialData, hasAlreadyVoted = false }
                       <div className={`w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl overflow-hidden bg-slate-800 border-2 transition-transform duration-500 group-hover/item:scale-105 ${
                         idx === 0 ? 'border-brand-500 shadow-[0_0_15px_rgba(163,42,41,0.3)]' : 'border-white/10'
                       }`}>
-                        <img 
+                        <Image 
                           src={candidate?.photoUrl || '/placeholder-avatar.png'} 
                           alt={candidate?.name || 'Candidate'} 
                           className="w-full h-full object-cover"
+                          width={64}
+                          height={64}
+                          unoptimized={!!candidate?.photoUrl}
                         />
                       </div>
                       {idx === 0 && (
@@ -199,7 +213,14 @@ export default function DetailedResults({ initialData, hasAlreadyVoted = false }
               <div className="flex -space-x-2">
                 {position.candidates.slice(0, 3).map((c, i) => (
                   <div key={i} className="w-4 h-4 md:w-5 md:h-5 rounded-full border border-surface-950 overflow-hidden bg-slate-800">
-                    <img src={c?.photoUrl || '/placeholder-avatar.png'} alt="" className="w-full h-full object-cover opacity-50" />
+                    <Image 
+                      src={c?.photoUrl || '/placeholder-avatar.png'} 
+                      alt="" 
+                      className="w-full h-full object-cover opacity-50" 
+                      width={20}
+                      height={20}
+                      unoptimized={!!c?.photoUrl}
+                    />
                   </div>
                 ))}
               </div>
@@ -207,6 +228,7 @@ export default function DetailedResults({ initialData, hasAlreadyVoted = false }
           </div>
         ))}
       </div>
+      )}
     </div>
   );
 }

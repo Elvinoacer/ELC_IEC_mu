@@ -10,6 +10,8 @@ const configSchema = z.object({
   closesAt: z.string().datetime(),
   candidateRegOpensAt: z.string().datetime().optional().nullable(),
   candidateRegClosesAt: z.string().datetime().optional().nullable(),
+  voterRegOpensAt: z.string().datetime().optional().nullable(),
+  voterRegClosesAt: z.string().datetime().optional().nullable(),
   isManuallyClosed: z.boolean().optional(),
 });
 
@@ -81,6 +83,8 @@ export async function PATCH(req: NextRequest) {
         closesAt: new Date(data.closesAt),
         candidateRegOpensAt: data.candidateRegOpensAt ? new Date(data.candidateRegOpensAt) : null,
         candidateRegClosesAt: data.candidateRegClosesAt ? new Date(data.candidateRegClosesAt) : null,
+        voterRegOpensAt: data.voterRegOpensAt ? new Date(data.voterRegOpensAt) : null,
+        voterRegClosesAt: data.voterRegClosesAt ? new Date(data.voterRegClosesAt) : null,
         isManuallyClosed: data.isManuallyClosed ?? false,
         updatedById: adminId,
         updatedAt: new Date(),
@@ -91,6 +95,8 @@ export async function PATCH(req: NextRequest) {
         closesAt: new Date(data.closesAt),
         candidateRegOpensAt: data.candidateRegOpensAt ? new Date(data.candidateRegOpensAt) : null,
         candidateRegClosesAt: data.candidateRegClosesAt ? new Date(data.candidateRegClosesAt) : null,
+        voterRegOpensAt: data.voterRegOpensAt ? new Date(data.voterRegOpensAt) : null,
+        voterRegClosesAt: data.voterRegClosesAt ? new Date(data.voterRegClosesAt) : null,
         isManuallyClosed: data.isManuallyClosed ?? false,
         updatedById: adminId,
       },

@@ -39,7 +39,10 @@ export default function VoteAttemptsPage() {
   };
 
   useEffect(() => {
-    fetchAttempts(page);
+    const init = async () => {
+      await fetchAttempts(page);
+    };
+    init();
   }, [page]);
 
   return (

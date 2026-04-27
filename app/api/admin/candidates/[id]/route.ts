@@ -9,7 +9,7 @@ const updateSchema = z.object({
   name: z.string().min(2).max(100),
   school: z.string().min(2).max(150),
   yearOfStudy: z.string(),
-  position: z.string(),
+  positionId: z.number().int().positive().optional(),
   scholarCode: z.string(),
 });
 
@@ -33,9 +33,30 @@ export async function PATCH(
     const candidate = await prisma.candidate.findUnique({ where: { id: candidateId } });
     if (!candidate) return error('Candidate not found', 404);
 
-    // Only allow editing if pending or approved (though approved is riskier, typically we edit before approval)
+    // Only allow editing if pending or approved
     if (candidate.status === 'REJECTED') {
       return error('Cannot edit a rejected candidate application.', 403);
+    }
+
+    let updateData: any = { ...result.data };
+
+    // [FIX] Prevent position changes once approved or votes exist 
+    if (result.data.positionId && result.data.positionId !== candidate.positionId) {
+      if (candidate.status === 'APPROVED') {
+        return error('Cannot change position for an approved candidate. Please reject or reset them first.', 403);
+      }
+
+      const voteCount = await prisma.vote.count({
+        where: { candidateId: candidate.id }
+      });
+      if (voteCount > 0) {
+        return error('Cannot change position for a candidate who has already received votes.', 403);
+      }
+
+      // Fetch the new position title for denormalization
+      const newPos = await prisma.position.findUnique({ where: { id: result.data.positionId } });
+      if (!newPos) return error('Selected position does not exist.', 400);
+      updateData.position = newPos.title;
     }
 
     // Check for scholar code uniqueness if changed
@@ -48,7 +69,7 @@ export async function PATCH(
 
     const updated = await prisma.candidate.update({
       where: { id: candidateId },
-      data: result.data,
+      data: updateData,
     });
 
     await logAudit(

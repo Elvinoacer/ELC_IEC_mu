@@ -5,15 +5,16 @@ import prisma from './prisma';
  * Log an administrative action to the AuditLog table.
  */
 export async function logAudit(
-  req: NextRequest,
-  adminId: number,
+  req: Request | NextRequest,
+  adminId: number | null,
   action: string,
   entity: string,
   entityId?: string | number,
-  details?: any
+  details?: Record<string, unknown>
 ) {
   try {
-    const ipAddress = req.headers.get('x-forwarded-for') || (req as any).ip || null;
+    const forwarded = req.headers.get('x-forwarded-for');
+    const ipAddress = (forwarded ? forwarded.split(',')[0].trim() : null) || req.headers.get('x-real-ip') || (req as { ip?: string }).ip || null;
     const userAgent = req.headers.get('user-agent') || null;
 
     await prisma.auditLog.create({
@@ -47,7 +48,7 @@ export async function logVoteAttempt(
   }
 ) {
   try {
-    const ipAddress = req.headers.get('x-forwarded-for') || (req as any).ip || null;
+    const ipAddress = req.headers.get('x-forwarded-for') || req.ip || null;
 
     await prisma.voteAttempt.create({
       data: {

@@ -7,10 +7,21 @@ import prisma from '@/lib/prisma';
  */
 export async function POST(req: NextRequest) {
   try {
+    // 1. Authenticate the webhook
+    const url = new URL(req.url);
+    const token = url.searchParams.get('token');
+    const secretHeader = req.headers.get('X-Webhook-Secret');
+    const expectedSecret = process.env.SMS_WEBHOOK_SECRET;
+
+    if (!expectedSecret || (token !== expectedSecret && secretHeader !== expectedSecret)) {
+      console.warn('[Webhook Warning] Unauthorized delivery report attempt.');
+      return new Response('Unauthorized', { status: 401 });
+    }
+
     // AT sends delivery reports as form-data or JSON depending on configuration
     // We'll try to handle both, but usually it's application/x-www-form-urlencoded
     const contentType = req.headers.get('content-type') || '';
-    let body: any;
+    let body: Record<string, unknown>;
 
     if (contentType.includes('application/x-www-form-urlencoded')) {
       const formData = await req.formData();
@@ -19,7 +30,14 @@ export async function POST(req: NextRequest) {
       body = await req.json();
     }
 
-    const { phoneNumber, id, status, failureReason } = body;
+    interface ATDeliveryReport {
+      phoneNumber?: string;
+      id?: string;
+      status?: string;
+      failureReason?: string;
+    }
+
+    const { phoneNumber, id, status, failureReason } = body as ATDeliveryReport;
 
     console.log(`[Webhook] Received delivery report for ${id} (${phoneNumber}): ${status}`);
 

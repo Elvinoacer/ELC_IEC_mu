@@ -28,10 +28,13 @@ export interface ResultsPayload {
   positions: PositionResult[];
   turnout: TurnoutStats;
   isOpen: boolean;
+  showCandidateResults: boolean;
   closesAt: string | null;
 }
 
-export async function generateResultsPayload(): Promise<ResultsPayload> {
+export async function generateResultsPayload(options?: {
+  includeCandidateResults?: boolean;
+}): Promise<ResultsPayload> {
   const [total, voted, config, dbPositions] = await Promise.all([
     prisma.voter.count(),
     prisma.voter.count({ where: { hasVoted: true } }),
@@ -41,33 +44,55 @@ export async function generateResultsPayload(): Promise<ResultsPayload> {
       include: {
         candidates: {
           where: { status: 'APPROVED' },
-          orderBy: { votes: 'desc' },
+          include: {
+            _count: {
+              select: { voteRecords: true }
+            }
+          }
         },
       },
     }),
   ]);
 
+  const now = new Date();
+  const isOpen = !!config && !config.isManuallyClosed && now >= config.opensAt && now <= config.closesAt;
+  const showCandidateResults = options?.includeCandidateResults ?? !isOpen;
+
   const positions: PositionResult[] = dbPositions.map((pos) => {
-    const totalVotes = pos.candidates.reduce((sum, c) => sum + c.votes, 0);
+    // Map db candidates to include the count as 'votes'
+    const candidatesWithVotes = pos.candidates.map(c => ({
+      ...c,
+      votes: c._count.voteRecords
+    }));
+
+    // Sort by votes descending, then name ascending
+    const orderedCandidates = candidatesWithVotes.sort((a, b) => {
+      if (showCandidateResults) {
+        if (b.votes !== a.votes) return b.votes - a.votes;
+      }
+      return a.name.localeCompare(b.name);
+    });
+
+    const totalVotes = showCandidateResults
+      ? orderedCandidates.reduce((sum, c) => sum + c.votes, 0)
+      : 0;
+
     return {
       id: pos.id,
       title: pos.title,
       displayOrder: pos.displayOrder,
       totalVotes,
-      candidates: pos.candidates.map((c) => ({
+      candidates: orderedCandidates.map((c) => ({
         id: c.id,
         name: c.name,
         photoUrl: c.photoUrl,
         school: c.school,
         yearOfStudy: c.yearOfStudy,
-        votes: c.votes,
-        percentage: totalVotes > 0 ? Number(((c.votes / totalVotes) * 100).toFixed(1)) : 0,
+        votes: showCandidateResults ? c.votes : 0,
+        percentage: showCandidateResults && totalVotes > 0 ? Number(((c.votes / totalVotes) * 100).toFixed(1)) : 0,
       })),
     };
   });
-
-  const now = new Date();
-  const isOpen = !!config && !config.isManuallyClosed && now >= config.opensAt && now <= config.closesAt;
 
   return {
     positions,
@@ -77,6 +102,7 @@ export async function generateResultsPayload(): Promise<ResultsPayload> {
       percentage: total > 0 ? Number(((voted / total) * 100).toFixed(1)) : 0,
     },
     isOpen,
+    showCandidateResults,
     closesAt: config?.closesAt?.toISOString() ?? null,
   };
 }

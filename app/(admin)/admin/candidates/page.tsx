@@ -12,6 +12,7 @@ interface Candidate {
   phone: string;
   school: string;
   yearOfStudy: string;
+  positionId: number;
   position: string;
   scholarCode: string;
   photoUrl: string;
@@ -25,7 +26,7 @@ interface NewCandidateForm {
   phone: string;
   school: string;
   yearOfStudy: string;
-  position: string;
+  positionId: number;
   scholarCode: string;
   photoUrl: string;
   status: "PENDING" | "APPROVED";
@@ -55,7 +56,7 @@ export default function AdminCandidatesPage() {
     phone: "",
     school: "",
     yearOfStudy: "1st Year",
-    position: "",
+    positionId: 0,
     scholarCode: "",
     photoUrl: "",
     status: "APPROVED",
@@ -88,10 +89,11 @@ export default function AdminCandidatesPage() {
   }, [filter]);
 
   useEffect(() => {
-    queueMicrotask(() => {
-      void fetchCandidates();
-      void fetchPositions();
-    });
+    const init = async () => {
+      await fetchCandidates();
+      await fetchPositions();
+    };
+    init();
   }, [fetchCandidates, fetchPositions]);
 
   const handleEditSubmit = async (e: React.FormEvent) => {
@@ -107,7 +109,7 @@ export default function AdminCandidatesPage() {
           name: editCandidate.name,
           school: editCandidate.school,
           yearOfStudy: editCandidate.yearOfStudy,
-          position: editCandidate.position,
+          positionId: editCandidate.positionId,
           scholarCode: editCandidate.scholarCode,
         }),
       });
@@ -180,7 +182,7 @@ export default function AdminCandidatesPage() {
         phone: "",
         school: "",
         yearOfStudy: "1st Year",
-        position: "",
+        positionId: 0,
         scholarCode: "",
         photoUrl: "",
         status: "APPROVED",
@@ -476,11 +478,11 @@ export default function AdminCandidatesPage() {
                 </label>
                 <select
                   className="w-full px-4 py-2.5 bg-surface-900 border border-glass-border rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-brand-500 appearance-none"
-                  value={newCandidate.position}
+                  value={newCandidate.positionId || ""}
                   onChange={(e) =>
                     setNewCandidate({
                       ...newCandidate,
-                      position: e.target.value,
+                      positionId: parseInt(e.target.value, 10),
                     })
                   }
                   required
@@ -489,7 +491,7 @@ export default function AdminCandidatesPage() {
                     Select position
                   </option>
                   {positions.map((p) => (
-                    <option key={p.id} value={p.title}>
+                    <option key={p.id} value={p.id}>
                       {p.title}
                     </option>
                   ))}
@@ -621,17 +623,17 @@ export default function AdminCandidatesPage() {
                 </label>
                 <select
                   className="w-full px-4 py-2.5 bg-surface-900 border border-glass-border rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-brand-500 appearance-none"
-                  value={editCandidate.position}
+                  value={editCandidate.positionId}
                   onChange={(e) =>
                     setEditCandidate({
                       ...editCandidate,
-                      position: e.target.value,
+                      positionId: parseInt(e.target.value, 10),
                     })
                   }
                   required
                 >
                   {positions.map((p) => (
-                    <option key={p.id} value={p.title}>
+                    <option key={p.id} value={p.id}>
                       {p.title}
                     </option>
                   ))}

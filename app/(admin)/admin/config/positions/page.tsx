@@ -30,7 +30,7 @@ export default function AdminPositionsPage() {
       const res = await fetch('/api/admin/positions');
       const json = await res.json();
       if (res.ok) setPositions(json.data);
-    } catch (err) {
+    } catch {
       setError('Failed to fetch positions');
     } finally {
       setLoading(false);
@@ -38,7 +38,10 @@ export default function AdminPositionsPage() {
   }, []);
 
   useEffect(() => {
-    fetchPositions();
+    const init = async () => {
+      await fetchPositions();
+    };
+    init();
   }, [fetchPositions]);
 
   const handleAdd = async (e: React.FormEvent) => {
@@ -57,8 +60,8 @@ export default function AdminPositionsPage() {
       setNewTitle('');
       setIsAdding(false);
       fetchPositions();
-    } catch (err: any) {
-      setError(err.message);
+    } catch {
+      setError('An error occurred');
     } finally {
       setIsSubmitting(false);
     }

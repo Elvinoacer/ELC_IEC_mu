@@ -95,17 +95,33 @@ export default function AdminVotersPage() {
   };
 
   const handleEditEmail = async (id: number, currentEmail: string | null) => {
-    const newEmail = window.prompt(
+    const newEmailInput = window.prompt(
       "Enter new email for voter (leave empty to clear):",
       currentEmail || "",
     );
-    if (newEmail === null) return;
+    if (newEmailInput === null) return;
+    const newEmail = newEmailInput.trim();
+
+    // If changing email, we might need a reason (backend will enforce if not SUPER_ADMIN)
+    let reason = "";
+    if (newEmail !== (currentEmail || "")) {
+      const reasonInput = window.prompt(
+        "Enter a reason for this email change (required for audit review):",
+        ""
+      );
+      if (reasonInput === null) return;
+      reason = reasonInput.trim();
+      if (reason.length < 5) {
+        alert("A valid reason (min 5 chars) is required to change an email.");
+        return;
+      }
+    }
 
     try {
       const res = await fetch(`/api/admin/voters/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "edit", email: newEmail }),
+        body: JSON.stringify({ action: "edit", email: newEmail, reason }),
       });
       if (res.ok) {
         fetchVoters();

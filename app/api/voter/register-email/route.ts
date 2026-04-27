@@ -33,10 +33,10 @@ export async function POST(req: NextRequest) {
       if (config.isManuallyClosed) {
         return error('Voter registration is currently suspended by the IEC.', 403);
       }
-      if (config.candidateRegOpensAt && now < config.candidateRegOpensAt) {
+      if (config.voterRegOpensAt && now < config.voterRegOpensAt) {
         return error('Voter registration has not opened yet.', 403);
       }
-      if (config.candidateRegClosesAt && now > config.candidateRegClosesAt) {
+      if (config.voterRegClosesAt && now > config.voterRegClosesAt) {
         return error('Voter registration has officially closed.', 403);
       }
     }
@@ -68,11 +68,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 5. Temporarily store email (unverified) on voter record
-    await prisma.voter.update({
-      where: { id: voter.id },
-      data: { email, emailVerified: false },
-    });
+    // 5. [FIX] Don't store email on voter record yet to prevent hijacking
+    // We now store the pending email in the OtpRequest record instead.
 
     // 6. Send email verification OTP
     const { expiresAt, emailFailed } = await sendEmailRegistrationOTP(email, normalizedPhone, ipAddress);
