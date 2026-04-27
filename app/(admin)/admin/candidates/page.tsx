@@ -111,6 +111,7 @@ export default function AdminCandidatesPage() {
           yearOfStudy: editCandidate.yearOfStudy,
           positionId: editCandidate.positionId,
           scholarCode: editCandidate.scholarCode,
+          photoUrl: editCandidate.photoUrl,
         }),
       });
       const data = await res.json();
@@ -124,6 +125,35 @@ export default function AdminCandidatesPage() {
       alert(message);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleFileUpload = async (file: File) => {
+    try {
+      const res = await fetch("/api/admin/upload/presigned", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fileName: file.name,
+          contentType: file.type,
+        }),
+      });
+      const { data, error } = await res.json();
+      if (error) throw new Error(error);
+
+      const uploadRes = await fetch(data.uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+
+      if (!uploadRes.ok) throw new Error("Upload failed");
+
+      return data.publicUrl;
+    } catch (err) {
+      console.error("Upload error", err);
+      alert("Failed to upload image");
+      return null;
     }
   };
 
@@ -359,175 +389,196 @@ export default function AdminCandidatesPage() {
         )}
       </div>
 
-      {/* Edit Modal */}
+      {/* Create Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
-          <Card className="w-full max-w-2xl bg-surface-800 border border-glass-border p-8 overflow-y-auto max-h-[90vh]">
-            <h3 className="text-xl font-bold text-white mb-6">Add Candidate</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <Card className="w-full max-w-2xl bg-surface-800/90 border border-glass-border p-6 sm:p-8 overflow-y-auto max-h-[90vh] shadow-[0_0_50px_-12px_rgba(163,42,41,0.25)]">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Add New Candidate</h3>
+              <button 
+                onClick={() => setShowCreateModal(false)}
+                className="text-slate-500 hover:text-white transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
             <form onSubmit={handleCreateCandidate} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-1">
-                  <label className="block text-sm font-medium text-slate-400">
-                    Full Name
+              {/* Photo Upload Section */}
+              <div className="flex flex-col sm:flex-row gap-6 items-center p-4 rounded-2xl bg-surface-900/50 border border-glass-border">
+                <div className="relative group shrink-0">
+                  <div className="w-32 h-32 rounded-2xl overflow-hidden border-2 border-dashed border-glass-border bg-surface-900 flex items-center justify-center transition-all group-hover:border-brand-500/50">
+                    {newCandidate.photoUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={newCandidate.photoUrl} alt="Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="text-center p-2">
+                        <svg className="w-8 h-8 text-slate-600 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">No Photo</span>
+                      </div>
+                    )}
+                  </div>
+                  {isSubmitting && (
+                    <div className="absolute inset-0 bg-surface-900/80 backdrop-blur-sm flex items-center justify-center rounded-2xl">
+                       <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex-1 text-center sm:text-left">
+                  <h4 className="text-sm font-bold text-white mb-1">Candidate Photo</h4>
+                  <p className="text-xs text-slate-400 mb-3">Upload a high-quality portrait (JPG, PNG). Max 2MB.</p>
+                  <label className="inline-flex items-center gap-2 px-4 py-2 bg-glass-hover hover:bg-glass-border text-white text-xs font-bold rounded-lg cursor-pointer transition-all active:scale-95">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                    <span>{newCandidate.photoUrl ? 'Change Photo' : 'Upload Image'}</span>
+                    <input 
+                      type="file" 
+                      className="hidden" 
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setIsSubmitting(true);
+                          const url = await handleFileUpload(file);
+                          if (url) setNewCandidate({ ...newCandidate, photoUrl: url });
+                          setIsSubmitting(false);
+                        }
+                      }}
+                    />
                   </label>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Full Name</label>
                   <input
-                    className="w-full px-4 py-2.5 bg-surface-900 border border-glass-border rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-brand-500"
+                    className="w-full px-4 py-3 bg-surface-900 border border-glass-border rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all placeholder:text-slate-700"
+                    placeholder="Enter full legal name"
                     value={newCandidate.name}
-                    onChange={(e) =>
-                      setNewCandidate({ ...newCandidate, name: e.target.value })
-                    }
+                    onChange={(e) => setNewCandidate({ ...newCandidate, name: e.target.value })}
                     required
                   />
                 </div>
-                <div className="space-y-1">
-                  <label className="block text-sm font-medium text-slate-400">
-                    Phone Number
-                  </label>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Phone Number</label>
                   <input
-                    className="w-full px-4 py-2.5 bg-surface-900 border border-glass-border rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-brand-500"
+                    className="w-full px-4 py-3 bg-surface-900 border border-glass-border rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all placeholder:text-slate-700"
                     value={newCandidate.phone}
-                    onChange={(e) =>
-                      setNewCandidate({
-                        ...newCandidate,
-                        phone: e.target.value,
-                      })
-                    }
+                    onChange={(e) => setNewCandidate({ ...newCandidate, phone: e.target.value })}
                     placeholder="+2547XXXXXXXX"
                     required
                   />
                 </div>
-                <div className="space-y-1">
-                  <label className="block text-sm font-medium text-slate-400">
-                    Scholar Code
-                  </label>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Scholar Code</label>
                   <input
-                    className="w-full px-4 py-2.5 bg-surface-900 border border-glass-border rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-brand-500"
+                    className="w-full px-4 py-3 bg-surface-900 border border-glass-border rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all placeholder:text-slate-700"
+                    placeholder="e.g. PF12345"
                     value={newCandidate.scholarCode}
-                    onChange={(e) =>
-                      setNewCandidate({
-                        ...newCandidate,
-                        scholarCode: e.target.value,
-                      })
-                    }
+                    onChange={(e) => setNewCandidate({ ...newCandidate, scholarCode: e.target.value })}
                     required
                   />
                 </div>
-                <div className="space-y-1">
-                  <label className="block text-sm font-medium text-slate-400">
-                    School / Campus
-                  </label>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">School / Campus</label>
                   <input
-                    className="w-full px-4 py-2.5 bg-surface-900 border border-glass-border rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-brand-500"
+                    className="w-full px-4 py-3 bg-surface-900 border border-glass-border rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all placeholder:text-slate-700"
+                    placeholder="e.g. School of Engineering"
                     value={newCandidate.school}
-                    onChange={(e) =>
-                      setNewCandidate({
-                        ...newCandidate,
-                        school: e.target.value,
-                      })
-                    }
+                    onChange={(e) => setNewCandidate({ ...newCandidate, school: e.target.value })}
                     required
                   />
                 </div>
-                <div className="space-y-1">
-                  <label className="block text-sm font-medium text-slate-400">
-                    Year of Study
-                  </label>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Year of Study</label>
+                  <div className="relative">
+                    <select
+                      className="w-full px-4 py-3 bg-surface-900 border border-glass-border rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 appearance-none transition-all"
+                      value={newCandidate.yearOfStudy}
+                      onChange={(e) => setNewCandidate({ ...newCandidate, yearOfStudy: e.target.value })}
+                      required
+                    >
+                      <option value="1st Year">1st Year</option>
+                      <option value="2nd Year">2nd Year</option>
+                      <option value="3rd Year">3rd Year</option>
+                      <option value="4th Year">4th Year</option>
+                      <option value="5th Year">5th Year</option>
+                      <option value="6th Year">6th Year</option>
+                      <option value="Postgraduate">Postgraduate</option>
+                    </select>
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Initial Status</label>
+                  <div className="relative">
+                    <select
+                      className="w-full px-4 py-3 bg-surface-900 border border-glass-border rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 appearance-none transition-all"
+                      value={newCandidate.status}
+                      onChange={(e) => setNewCandidate({ ...newCandidate, status: e.target.value as "PENDING" | "APPROVED" })}
+                    >
+                      <option value="APPROVED">APPROVED (Live)</option>
+                      <option value="PENDING">PENDING (Review)</option>
+                    </select>
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Position Running For</label>
+                <div className="relative">
                   <select
-                    className="w-full px-4 py-2.5 bg-surface-900 border border-glass-border rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-brand-500 appearance-none"
-                    value={newCandidate.yearOfStudy}
-                    onChange={(e) =>
-                      setNewCandidate({
-                        ...newCandidate,
-                        yearOfStudy: e.target.value,
-                      })
-                    }
+                    className="w-full px-4 py-3 bg-surface-900 border border-glass-border rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 appearance-none transition-all"
+                    value={newCandidate.positionId || ""}
+                    onChange={(e) => setNewCandidate({ ...newCandidate, positionId: parseInt(e.target.value, 10) })}
                     required
                   >
-                    <option value="1st Year">1st Year</option>
-                    <option value="2nd Year">2nd Year</option>
-                    <option value="3rd Year">3rd Year</option>
-                    <option value="4th Year">4th Year</option>
-                    <option value="5th Year">5th Year</option>
-                    <option value="6th Year">6th Year</option>
-                    <option value="Postgraduate">Postgraduate</option>
+                    <option value="" disabled>Select the target position</option>
+                    {positions.map((p) => (
+                      <option key={p.id} value={p.id}>{p.title}</option>
+                    ))}
                   </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="block text-sm font-medium text-slate-400">
-                    Initial Status
-                  </label>
-                  <select
-                    className="w-full px-4 py-2.5 bg-surface-900 border border-glass-border rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-brand-500 appearance-none"
-                    value={newCandidate.status}
-                    onChange={(e) =>
-                      setNewCandidate({
-                        ...newCandidate,
-                        status: e.target.value as "PENDING" | "APPROVED",
-                      })
-                    }
-                  >
-                    <option value="APPROVED">APPROVED</option>
-                    <option value="PENDING">PENDING</option>
-                  </select>
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="block text-sm font-medium text-slate-400">
-                  Position Running For
-                </label>
-                <select
-                  className="w-full px-4 py-2.5 bg-surface-900 border border-glass-border rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-brand-500 appearance-none"
-                  value={newCandidate.positionId || ""}
-                  onChange={(e) =>
-                    setNewCandidate({
-                      ...newCandidate,
-                      positionId: parseInt(e.target.value, 10),
-                    })
-                  }
-                  required
-                >
-                  <option value="" disabled>
-                    Select position
-                  </option>
-                  {positions.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-1">
-                <label className="block text-sm font-medium text-slate-400">
-                  Candidate Photo URL
-                </label>
-                <input
-                  type="url"
-                  className="w-full px-4 py-2.5 bg-surface-900 border border-glass-border rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-brand-500"
-                  value={newCandidate.photoUrl}
-                  onChange={(e) =>
-                    setNewCandidate({
-                      ...newCandidate,
-                      photoUrl: e.target.value,
-                    })
-                  }
-                  placeholder="https://..."
-                  required
-                />
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4">
+              <div className="flex justify-end gap-4 pt-6 border-t border-glass-border">
                 <Button
                   variant="ghost"
                   type="button"
                   onClick={() => setShowCreateModal(false)}
                   disabled={isSubmitting}
+                  className="px-8"
                 >
                   Cancel
                 </Button>
-                <Button type="submit" loading={isSubmitting}>
-                  Save Candidate
+                <Button 
+                  type="submit" 
+                  loading={isSubmitting}
+                  disabled={!newCandidate.photoUrl}
+                  className="px-10"
+                >
+                  Finalize Candidate
                 </Button>
               </div>
             </form>
@@ -535,121 +586,161 @@ export default function AdminCandidatesPage() {
         </div>
       )}
 
+      {/* Edit Modal */}
       {editCandidate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
-          <Card className="w-full max-w-2xl bg-surface-800 border border-glass-border p-8 overflow-y-auto max-h-[90vh]">
-            <h3 className="text-xl font-bold text-white mb-6">
-              Edit Candidate Details
-            </h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <Card className="w-full max-w-2xl bg-surface-800/90 border border-glass-border p-6 sm:p-8 overflow-y-auto max-h-[90vh] shadow-[0_0_50px_-12px_rgba(163,42,41,0.25)]">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Edit Candidate</h3>
+              <button 
+                onClick={() => setEditCandidate(null)}
+                className="text-slate-500 hover:text-white transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
             <form onSubmit={handleEditSubmit} className="space-y-6">
+              {/* Photo Edit Section */}
+              <div className="flex flex-col sm:flex-row gap-6 items-center p-4 rounded-2xl bg-surface-900/50 border border-glass-border">
+                <div className="relative group shrink-0">
+                  <div className="w-32 h-32 rounded-2xl overflow-hidden border-2 border-dashed border-glass-border bg-surface-900 flex items-center justify-center transition-all group-hover:border-brand-500/50">
+                    {editCandidate.photoUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={editCandidate.photoUrl} alt="Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="text-center p-2">
+                        <svg className="w-8 h-8 text-slate-600 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                  {isSubmitting && (
+                    <div className="absolute inset-0 bg-surface-900/80 backdrop-blur-sm flex items-center justify-center rounded-2xl">
+                       <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex-1 text-center sm:text-left">
+                  <h4 className="text-sm font-bold text-white mb-1">Update Portrait</h4>
+                  <p className="text-xs text-slate-400 mb-3">Keep photos consistent with a white background if possible.</p>
+                  <label className="inline-flex items-center gap-2 px-4 py-2 bg-glass-hover hover:bg-glass-border text-white text-xs font-bold rounded-lg cursor-pointer transition-all active:scale-95">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                    <span>Replace Image</span>
+                    <input 
+                      type="file" 
+                      className="hidden" 
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setIsSubmitting(true);
+                          const url = await handleFileUpload(file);
+                          if (url) setEditCandidate({ ...editCandidate, photoUrl: url });
+                          setIsSubmitting(false);
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-1">
-                  <label className="block text-sm font-medium text-slate-400">
-                    Full Name
-                  </label>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Full Name</label>
                   <input
-                    className="w-full px-4 py-2.5 bg-surface-900 border border-glass-border rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-brand-500"
+                    className="w-full px-4 py-3 bg-surface-900 border border-glass-border rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all"
                     value={editCandidate.name}
-                    onChange={(e) =>
-                      setEditCandidate({
-                        ...editCandidate,
-                        name: e.target.value,
-                      })
-                    }
+                    onChange={(e) => setEditCandidate({ ...editCandidate, name: e.target.value })}
                     required
                   />
                 </div>
-                <div className="space-y-1">
-                  <label className="block text-sm font-medium text-slate-400">
-                    Scholar Code
-                  </label>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Scholar Code</label>
                   <input
-                    className="w-full px-4 py-2.5 bg-surface-900 border border-glass-border rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-brand-500"
+                    className="w-full px-4 py-3 bg-surface-900 border border-glass-border rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all"
                     value={editCandidate.scholarCode}
-                    onChange={(e) =>
-                      setEditCandidate({
-                        ...editCandidate,
-                        scholarCode: e.target.value,
-                      })
-                    }
+                    onChange={(e) => setEditCandidate({ ...editCandidate, scholarCode: e.target.value })}
                     required
                   />
                 </div>
-                <div className="space-y-1">
-                  <label className="block text-sm font-medium text-slate-400">
-                    School / Campus
-                  </label>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">School / Campus</label>
                   <input
-                    className="w-full px-4 py-2.5 bg-surface-900 border border-glass-border rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-brand-500"
+                    className="w-full px-4 py-3 bg-surface-900 border border-glass-border rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all"
                     value={editCandidate.school}
-                    onChange={(e) =>
-                      setEditCandidate({
-                        ...editCandidate,
-                        school: e.target.value,
-                      })
-                    }
+                    onChange={(e) => setEditCandidate({ ...editCandidate, school: e.target.value })}
                     required
                   />
                 </div>
-                <div className="space-y-1">
-                  <label className="block text-sm font-medium text-slate-400">
-                    Year of Study
-                  </label>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Year of Study</label>
+                  <div className="relative">
+                    <select
+                      className="w-full px-4 py-3 bg-surface-900 border border-glass-border rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 appearance-none transition-all"
+                      value={editCandidate.yearOfStudy}
+                      onChange={(e) => setEditCandidate({ ...editCandidate, yearOfStudy: e.target.value })}
+                      required
+                    >
+                      <option value="1st Year">1st Year</option>
+                      <option value="2nd Year">2nd Year</option>
+                      <option value="3rd Year">3rd Year</option>
+                      <option value="4th Year">4th Year</option>
+                      <option value="5th Year">5th Year</option>
+                      <option value="6th Year">6th Year</option>
+                      <option value="Postgraduate">Postgraduate</option>
+                    </select>
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Position Running For</label>
+                <div className="relative">
                   <select
-                    className="w-full px-4 py-2.5 bg-surface-900 border border-glass-border rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-brand-500 appearance-none"
-                    value={editCandidate.yearOfStudy}
-                    onChange={(e) =>
-                      setEditCandidate({
-                        ...editCandidate,
-                        yearOfStudy: e.target.value,
-                      })
-                    }
+                    className="w-full px-4 py-3 bg-surface-900 border border-glass-border rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 appearance-none transition-all"
+                    value={editCandidate.positionId}
+                    onChange={(e) => setEditCandidate({ ...editCandidate, positionId: parseInt(e.target.value, 10) })}
                     required
                   >
-                    <option value="1st Year">1st Year</option>
-                    <option value="2nd Year">2nd Year</option>
-                    <option value="3rd Year">3rd Year</option>
-                    <option value="4th Year">4th Year</option>
-                    <option value="5th Year">5th Year</option>
-                    <option value="6th Year">6th Year</option>
-                    <option value="Postgraduate">Postgraduate</option>
+                    {positions.map((p) => (
+                      <option key={p.id} value={p.id}>{p.title}</option>
+                    ))}
                   </select>
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="block text-sm font-medium text-slate-400">
-                  Position Running For
-                </label>
-                <select
-                  className="w-full px-4 py-2.5 bg-surface-900 border border-glass-border rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-brand-500 appearance-none"
-                  value={editCandidate.positionId}
-                  onChange={(e) =>
-                    setEditCandidate({
-                      ...editCandidate,
-                      positionId: parseInt(e.target.value, 10),
-                    })
-                  }
-                  required
-                >
-                  {positions.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4">
+              <div className="flex justify-end gap-4 pt-6 border-t border-glass-border">
                 <Button
                   variant="ghost"
                   type="button"
                   onClick={() => setEditCandidate(null)}
                   disabled={isSubmitting}
+                  className="px-8"
                 >
                   Cancel
                 </Button>
-                <Button type="submit" loading={isSubmitting}>
+                <Button 
+                  type="submit" 
+                  loading={isSubmitting}
+                  className="px-10"
+                >
                   Save Changes
                 </Button>
               </div>

@@ -11,6 +11,7 @@ const updateSchema = z.object({
   yearOfStudy: z.string(),
   positionId: z.number().int().positive().optional(),
   scholarCode: z.string(),
+  photoUrl: z.string().url().optional(),
 });
 
 export async function PATCH(
