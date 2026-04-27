@@ -1,0 +1,4 @@
+
+> iec_view_main@0.1.0 lint
+> eslint app/(admin)/admin/candidates/page.tsx app/api/admin/candidates/route.ts app/(public)/page.tsx components/layouts/PublicShell.tsx
+
