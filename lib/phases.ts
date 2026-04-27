@@ -25,7 +25,7 @@ export interface VotingConfig {
   isConfigured?: boolean;
 }
 
-export function getElectionPhase(config: VotingConfig): PhaseInfo {
+export function getElectionPhase(config: VotingConfig | null): PhaseInfo {
   if (!config || config.isConfigured === false) {
     return {
       phase: 'UNKNOWN',

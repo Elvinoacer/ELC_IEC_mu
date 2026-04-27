@@ -23,7 +23,7 @@ export async function logAudit(
         action,
         entity,
         entityId: entityId?.toString() || null,
-        details: details || {},
+        details: (details as any) || {},
         ipAddress,
         userAgent,
       },
@@ -48,7 +48,8 @@ export async function logVoteAttempt(
   }
 ) {
   try {
-    const ipAddress = req.headers.get('x-forwarded-for') || req.ip || null;
+    const forwarded = req.headers.get('x-forwarded-for');
+    const ipAddress = (forwarded ? forwarded.split(',')[0].trim() : null) || req.headers.get('x-real-ip') || null;
 
     await prisma.voteAttempt.create({
       data: {

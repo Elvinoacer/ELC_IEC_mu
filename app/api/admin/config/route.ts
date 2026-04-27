@@ -86,9 +86,9 @@ export async function PATCH(req: NextRequest) {
         voterRegOpensAt: data.voterRegOpensAt ? new Date(data.voterRegOpensAt) : null,
         voterRegClosesAt: data.voterRegClosesAt ? new Date(data.voterRegClosesAt) : null,
         isManuallyClosed: data.isManuallyClosed ?? false,
-        updatedById: adminId,
+        updatedById: adminId as number,
         updatedAt: new Date(),
-      },
+      } as any,
       create: {
         id: 1,
         opensAt: new Date(data.opensAt),
@@ -98,8 +98,8 @@ export async function PATCH(req: NextRequest) {
         voterRegOpensAt: data.voterRegOpensAt ? new Date(data.voterRegOpensAt) : null,
         voterRegClosesAt: data.voterRegClosesAt ? new Date(data.voterRegClosesAt) : null,
         isManuallyClosed: data.isManuallyClosed ?? false,
-        updatedById: adminId,
-      },
+        updatedById: adminId as number,
+      } as any,
     });
 
     await logAudit(

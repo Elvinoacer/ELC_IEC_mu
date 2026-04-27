@@ -147,7 +147,7 @@ export async function sendSMS(to: string, message: string): Promise<void> {
       }
 
       console.log(`[SMS] Sending to ${to} (attempt ${attempt})...`);
-      const result = (await sms.send(options) as unknown) as ATSendResult;
+      const result = (await sms.send(options as any) as unknown) as ATSendResult;
 
       // Log full raw response for debugging
       console.log('[SMS] AT raw response:', JSON.stringify(result, null, 2));
@@ -290,8 +290,8 @@ function extractRecipient(result: unknown): ATRecipient | null {
   // Standard shape: result.SMSMessageData.Recipients[0]
   const recipients =
     res?.SMSMessageData?.Recipients ||
-    (res as Record<string, unknown>)?.SMSMessageData?.recipients ||
-    (res as Record<string, unknown>)?.recipients;
+    (res as any)?.SMSMessageData?.recipients ||
+    (res as any)?.recipients;
 
   if (Array.isArray(recipients) && recipients.length > 0) {
     return recipients[0] as ATRecipient;

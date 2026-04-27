@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     // 1. Check for lockout
     const lockout = await checkLoginLockout(ip, username);
     if (lockout.locked) {
-      return error(lockout.reason, 429);
+      return error(lockout.reason || "Account temporarily locked.", 429);
     }
 
     // Find admin by username

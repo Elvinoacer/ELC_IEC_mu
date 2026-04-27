@@ -20,14 +20,23 @@ async function testSeed() {
   }
   console.log("✅ Created voters");
 
-  // 2. Create Candidates (Approved)
+  // 2. Create Positions
+  const chairperson = await prisma.position.upsert({
+    where: { title: "Chairperson" },
+    update: {},
+    create: { title: "Chairperson", displayOrder: 1 }
+  });
+  console.log("✅ Created positions");
+
+  // 3. Create Candidates (Approved)
   const candidates = [
     {
       name: "Alice Juma",
       phone: "+254700000003",
       school: "School of Engineering",
       yearOfStudy: "3rd Year",
-      position: "Chairperson",
+      positionId: chairperson.id,
+      position: chairperson.title,
       scholarCode: "PF123",
       photoUrl: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200&h=200",
       status: "APPROVED"
@@ -37,7 +46,8 @@ async function testSeed() {
       phone: "+254700000004",
       school: "School of Business",
       yearOfStudy: "4th Year",
-      position: "Chairperson",
+      positionId: chairperson.id,
+      position: chairperson.title,
       scholarCode: "PF456",
       photoUrl: "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=200&h=200",
       status: "APPROVED"
@@ -47,7 +57,7 @@ async function testSeed() {
   for (const c of candidates) {
     await prisma.candidate.upsert({
       where: { scholarCode: c.scholarCode },
-      update: { status: "APPROVED" },
+      update: { status: "APPROVED", positionId: c.positionId, position: c.position },
       create: c
     });
   }

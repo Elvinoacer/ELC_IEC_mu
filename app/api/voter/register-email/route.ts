@@ -33,10 +33,10 @@ export async function POST(req: NextRequest) {
       if (config.isManuallyClosed) {
         return error('Voter registration is currently suspended by the IEC.', 403);
       }
-      if (config.voterRegOpensAt && now < config.voterRegOpensAt) {
+      if (config.voterRegOpensAt && now < new Date(config.voterRegOpensAt)) {
         return error('Voter registration has not opened yet.', 403);
       }
-      if (config.voterRegClosesAt && now > config.voterRegClosesAt) {
+      if (config.voterRegClosesAt && now > new Date(config.voterRegClosesAt)) {
         return error('Voter registration has officially closed.', 403);
       }
     }

@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
     await prisma.smsLog.update({
       where: { messageId: id },
       data: {
-        status: status.toUpperCase(),
+        status: status?.toUpperCase() || 'UNKNOWN',
         failureReason: failureReason || null,
       }
     });
