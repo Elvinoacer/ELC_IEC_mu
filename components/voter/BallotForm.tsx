@@ -129,7 +129,7 @@ export default function BallotForm({ positions, deviceHash }: Props) {
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={candidate.photoUrl}
+                        src={candidate?.photoUrl || '/placeholder-avatar.png'}
                         alt={candidate.name}
                         className="w-full h-full object-cover"
                         onError={(e) => {

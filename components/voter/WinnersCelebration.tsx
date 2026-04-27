@@ -35,15 +35,16 @@ export default function WinnersCelebration({ data }: WinnersCelebrationProps) {
 
   const winners = useMemo(() => {
     if (!data) return [];
-    return data.positions.map(pos => {
-      // Assuming candidates are already sorted by votes in the payload or we find the max
-      const winner = [...pos.candidates].sort((a, b) => b.votes - a.votes)[0];
-      return {
-        position: pos.title,
-        winner,
-        totalVotes: pos.totalVotes
-      };
-    });
+    return data.positions
+      .filter(pos => pos.candidates.length > 0) // Only include positions with candidates
+      .map(pos => {
+        const winner = [...pos.candidates].sort((a, b) => b.votes - a.votes)[0];
+        return {
+          position: pos.title,
+          winner,
+          totalVotes: pos.totalVotes
+        };
+      });
   }, [data]);
 
   if (!data) return null;
@@ -89,8 +90,8 @@ export default function WinnersCelebration({ data }: WinnersCelebrationProps) {
                   <div className="absolute inset-0 bg-brand-500/30 blur-2xl rounded-full scale-125" />
                   <div className="relative w-32 h-32 md:w-40 md:h-40 rounded-[2rem] md:rounded-[2.5rem] overflow-hidden border-4 border-brand-500 shadow-2xl rotate-3 group-hover:rotate-0 transition-transform duration-500">
                     <img 
-                      src={item.winner.photoUrl} 
-                      alt={item.winner.name} 
+                      src={item.winner?.photoUrl || '/placeholder-avatar.png'} 
+                      alt={item.winner?.name || 'Candidate'} 
                       className="w-full h-full object-cover scale-110 group-hover:scale-100 transition-transform duration-700"
                     />
                   </div>
@@ -103,9 +104,9 @@ export default function WinnersCelebration({ data }: WinnersCelebrationProps) {
                 </div>
 
                 <div className="space-y-2 pt-2">
-                  <h3 className="text-2xl md:text-3xl font-black text-white tracking-tight">{item.winner.name}</h3>
+                  <h3 className="text-2xl md:text-3xl font-black text-white tracking-tight">{item.winner?.name || 'Unknown Candidate'}</h3>
                   <div className="flex flex-col items-center">
-                    <span className="text-brand-400 font-black text-2xl">{item.winner.votes}</span>
+                    <span className="text-brand-400 font-black text-2xl">{item.winner?.votes || 0}</span>
                     <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Total Votes Won</span>
                   </div>
                 </div>

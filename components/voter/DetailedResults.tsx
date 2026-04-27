@@ -157,8 +157,8 @@ export default function DetailedResults({ initialData, hasAlreadyVoted = false }
                         idx === 0 ? 'border-brand-500 shadow-[0_0_15px_rgba(163,42,41,0.3)]' : 'border-white/10'
                       }`}>
                         <img 
-                          src={candidate.photoUrl} 
-                          alt={candidate.name} 
+                          src={candidate?.photoUrl || '/placeholder-avatar.png'} 
+                          alt={candidate?.name || 'Candidate'} 
                           className="w-full h-full object-cover"
                         />
                       </div>
@@ -199,7 +199,7 @@ export default function DetailedResults({ initialData, hasAlreadyVoted = false }
               <div className="flex -space-x-2">
                 {position.candidates.slice(0, 3).map((c, i) => (
                   <div key={i} className="w-4 h-4 md:w-5 md:h-5 rounded-full border border-surface-950 overflow-hidden bg-slate-800">
-                    <img src={c.photoUrl} alt="" className="w-full h-full object-cover opacity-50" />
+                    <img src={c?.photoUrl || '/placeholder-avatar.png'} alt="" className="w-full h-full object-cover opacity-50" />
                   </div>
                 ))}
               </div>

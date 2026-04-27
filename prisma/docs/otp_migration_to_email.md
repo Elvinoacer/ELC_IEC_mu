@@ -1,4 +1,5 @@
 # OTP Migration Plan: SMS → Email (Resend)
+
 ### ELC IEC Voting System — `ELC_IEC_mu-main`
 
 ---
@@ -30,13 +31,13 @@
 
 ### What is changing
 
-| Aspect | Before | After |
-|---|---|---|
-| OTP delivery channel | Africa's Talking SMS | Resend transactional email |
-| Voter identity anchor | Phone number | Phone number (unchanged as biometric key) |
-| OTP destination | The voter's phone | The voter's verified email address |
-| Pre-voting step | None | Email-to-phone association (one-time) |
-| Anti-fraud layer | Device hash + `hasVoted` flag | Device hash + `hasVoted` + email ownership proof |
+| Aspect                | Before                        | After                                            |
+| --------------------- | ----------------------------- | ------------------------------------------------ |
+| OTP delivery channel  | Africa's Talking SMS          | Resend transactional email                       |
+| Voter identity anchor | Phone number                  | Phone number (unchanged as biometric key)        |
+| OTP destination       | The voter's phone             | The voter's verified email address               |
+| Pre-voting step       | None                          | Email-to-phone association (one-time)            |
+| Anti-fraud layer      | Device hash + `hasVoted` flag | Device hash + `hasVoted` + email ownership proof |
 
 ### Goals
 
@@ -52,29 +53,29 @@
 
 ### Files that will change
 
-| File | Why it changes |
-|---|---|
-| `prisma/schema.prisma` | Add `email`, `emailVerified` to `Voter`; update `OtpRequest` to support email key; replace `SmsLog` with `EmailLog` |
-| `lib/otp.ts` | `sendOTP` now dispatches via email, not SMS |
-| `lib/sms.ts` | Deprecated → moved to `lib/sms.ts.bak` (or deleted after confirming no other usages) |
-| `app/api/vote/auth/request-otp/route.ts` | Guards: voter must have a verified email; sends OTP to email |
-| `app/api/vote/auth/verify-otp/route.ts` | No structural change; OTP lookup is still by phone |
-| `app/api/admin/voters/route.ts` | Return `email` + `emailVerified` fields |
-| `app/api/admin/voters/[id]/route.ts` | Allow PATCH of `email` field by admin |
-| `app/api/admin/voters/bulk/route.ts` | Accept optional `email` column in CSV import |
-| `components/voter/AuthCard.tsx` | Show masked email (not phone) once OTP is dispatched |
-| `components/admin/AddVoterModal.tsx` | Add optional email field |
-| `components/admin/VoterImportModal.tsx` | Document + support `email` CSV column |
+| File                                     | Why it changes                                                                                                      |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `prisma/schema.prisma`                   | Add `email`, `emailVerified` to `Voter`; update `OtpRequest` to support email key; replace `SmsLog` with `EmailLog` |
+| `lib/otp.ts`                             | `sendOTP` now dispatches via email, not SMS                                                                         |
+| `lib/sms.ts`                             | Deprecated → moved to `lib/sms.ts.bak` (or deleted after confirming no other usages)                                |
+| `app/api/vote/auth/request-otp/route.ts` | Guards: voter must have a verified email; sends OTP to email                                                        |
+| `app/api/vote/auth/verify-otp/route.ts`  | No structural change; OTP lookup is still by phone                                                                  |
+| `app/api/admin/voters/route.ts`          | Return `email` + `emailVerified` fields                                                                             |
+| `app/api/admin/voters/[id]/route.ts`     | Allow PATCH of `email` field by admin                                                                               |
+| `app/api/admin/voters/bulk/route.ts`     | Accept optional `email` column in CSV import                                                                        |
+| `components/voter/AuthCard.tsx`          | Show masked email (not phone) once OTP is dispatched                                                                |
+| `components/admin/AddVoterModal.tsx`     | Add optional email field                                                                                            |
+| `components/admin/VoterImportModal.tsx`  | Document + support `email` CSV column                                                                               |
 
 ### Files that will be added
 
-| File | Purpose |
-|---|---|
-| `lib/email.ts` | Resend client, HTML templates, `sendEmailOTP()`, `tryEmailSend()` |
-| `app/api/voter/register-email/route.ts` | Phase A Step 1 — accept phone + email, send verification OTP |
+| File                                           | Purpose                                                           |
+| ---------------------------------------------- | ----------------------------------------------------------------- |
+| `lib/email.ts`                                 | Resend client, HTML templates, `sendEmailOTP()`, `tryEmailSend()` |
+| `app/api/voter/register-email/route.ts`        | Phase A Step 1 — accept phone + email, send verification OTP      |
 | `app/api/voter/register-email/verify/route.ts` | Phase A Step 2 — verify OTP, persist `email + emailVerified=true` |
-| `app/(public)/register-email/page.tsx` | Public UI page for the email association flow |
-| `components/voter/EmailRegistrationCard.tsx` | Two-step UI component (phone → email entry → OTP verify) |
+| `app/(public)/register-email/page.tsx`         | Public UI page for the email association flow                     |
+| `components/voter/EmailRegistrationCard.tsx`   | Two-step UI component (phone → email entry → OTP verify)          |
 
 ### Files that are untouched
 
@@ -110,11 +111,13 @@ This is a new flow. It runs **before** the election opens, but the system must a
 **Route:** `POST /api/voter/register-email`
 
 Request body:
+
 ```json
 { "phone": "0712345678", "email": "voter@example.com" }
 ```
 
 Server logic:
+
 1. Normalize phone → E.164.
 2. Validate email format with Zod `z.string().email()`.
 3. Look up voter by phone in `voters` table. If not found → `404`.
@@ -131,11 +134,13 @@ Server logic:
 **Route:** `POST /api/voter/register-email/verify`
 
 Request body:
+
 ```json
 { "phone": "0712345678", "email": "voter@example.com", "code": "381920" }
 ```
 
 Server logic:
+
 1. Normalize phone.
 2. Look up voter. Confirm `voter.email === email` (must match what was sent in Step 1).
 3. Run `verifyOTPByEmail(email, code)` — new function in `lib/otp.ts` that queries `OtpRequest` by `email` key.
@@ -158,6 +163,7 @@ This is the **modified** version of the existing vote auth flow.
 **Route:** `POST /api/vote/auth/request-otp` (modified)
 
 New guard added at the top:
+
 ```
 if (!voter.email || !voter.emailVerified) {
   return error(
@@ -168,6 +174,7 @@ if (!voter.email || !voter.emailVerified) {
 ```
 
 Everything else is the same, except:
+
 - `sendOTP(phone, ipAddress)` internally now calls `sendEmailOTP(voter.email, code)` instead of `sendSMS(phone, ...)`.
 - The response still returns `{ alreadySent, expiresAt, cooldownSeconds }` — the email address is **not** returned verbatim; instead return a masked form: `j****@gmail.com` (see masking helper below).
 
@@ -262,12 +269,12 @@ npm install resend
 ```ts
 // lib/email.ts
 
-import { Resend } from 'resend';
-import { prisma } from './prisma';
+import { Resend } from "resend";
+import { prisma } from "./prisma";
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
-const FROM_ADDRESS   = process.env.RESEND_FROM || 'noreply@yourdomain.com';  // your verified domain
-const IS_SIMULATION  = !RESEND_API_KEY;
+const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
+const FROM_ADDRESS = process.env.RESEND_FROM || "noreply@yourdomain.com"; // your verified domain
+const IS_SIMULATION = !RESEND_API_KEY;
 
 const resend = IS_SIMULATION ? null : new Resend(RESEND_API_KEY);
 ```
@@ -318,8 +325,8 @@ HTML body:
 export async function sendEmail(
   to: string,
   subject: string,
-  html: string
-): Promise<void>
+  html: string,
+): Promise<void>;
 ```
 
 - Creates an `EmailLog` record first (audit trail).
@@ -330,16 +337,23 @@ export async function sendEmail(
 ### Convenience wrappers
 
 ```ts
-export async function sendEmailOTP(to: string, code: string): Promise<void>
-export async function sendEmailVerificationOTP(to: string, code: string): Promise<void>
-export async function tryEmailSend(to: string, subject: string, html: string): Promise<boolean>
+export async function sendEmailOTP(to: string, code: string): Promise<void>;
+export async function sendEmailVerificationOTP(
+  to: string,
+  code: string,
+): Promise<void>;
+export async function tryEmailSend(
+  to: string,
+  subject: string,
+  html: string,
+): Promise<boolean>;
 ```
 
 ### Email masking helper
 
 ```ts
 // Returns "j****@gmail.com" — used in API response to confirm delivery without exposing address
-export function maskEmail(email: string): string
+export function maskEmail(email: string): string;
 ```
 
 ---
@@ -353,9 +367,9 @@ export function maskEmail(email: string): string
 ```ts
 export async function sendOTP(
   phone: string,
-  voterEmail: string,      // NEW: caller must pass voter's verified email
-  ipAddress?: string
-): Promise<{ expiresAt: Date; emailFailed: boolean }>
+  voterEmail: string, // NEW: caller must pass voter's verified email
+  ipAddress?: string,
+): Promise<{ expiresAt: Date; emailFailed: boolean }>;
 ```
 
 - Remove the `sendSMS` call.
@@ -375,8 +389,8 @@ export async function sendOTP(
 export async function sendEmailRegistrationOTP(
   email: string,
   phone: string,
-  ipAddress?: string
-): Promise<{ expiresAt: Date; emailFailed: boolean }>
+  ipAddress?: string,
+): Promise<{ expiresAt: Date; emailFailed: boolean }>;
 ```
 
 - Generates a code with longer TTL (e.g. 10 minutes for registration vs 5 minutes for vote day).
@@ -388,8 +402,8 @@ export async function sendEmailRegistrationOTP(
 ```ts
 export async function verifyOTPByEmail(
   email: string,
-  code: string
-): Promise<VerifyResult>
+  code: string,
+): Promise<VerifyResult>;
 ```
 
 - Identical logic to `verifyOTP` but queries by `email` field instead of `phone`.
@@ -433,18 +447,19 @@ Errors   → 400 (wrong/expired OTP), 404 (voter not found),
 **File:** `app/api/vote/auth/request-otp/route.ts`
 
 Changes:
+
 1. After fetching the voter, add guard:
    ```ts
    if (!voter.email || !voter.emailVerified) {
      return error(
        "No verified email on file. Please register your email before voting.",
-       403
+       403,
      );
    }
    ```
 2. Pass `voter.email` to the updated `sendOTP(phone, voter.email, ipAddress)` call.
 3. Change response field `smsWarning` → `emailWarning`.
-4. Add `maskedEmail` to success response: `maskEmail(voter.email)` (so the UI can show "Code sent to j****@gmail.com").
+4. Add `maskedEmail` to success response: `maskEmail(voter.email)` (so the UI can show "Code sent to j\*\*\*\*@gmail.com").
 
 ### `POST /api/vote/auth/verify-otp`
 
@@ -515,26 +530,28 @@ SUCCESS step:
 Each template is a self-contained HTML string function in `lib/email.ts`:
 
 **Structure for all templates:**
+
 ```html
 <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>[Subject]</title>
-  <style>
-    /* Inline CSS: brand colors, max-width 600px, mobile-responsive */
-  </style>
-</head>
-<body>
-  <!-- Header with ELP Moi Chapter branding + logo -->
-  <!-- Main content: code in large box, instructions -->
-  <!-- Footer: election info, "this is an automated message" -->
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>[Subject]</title>
+    <style>
+      /* Inline CSS: brand colors, max-width 600px, mobile-responsive */
+    </style>
+  </head>
+  <body>
+    <!-- Header with ELP Moi Chapter branding + logo -->
+    <!-- Main content: code in large box, instructions -->
+    <!-- Footer: election info, "this is an automated message" -->
+  </body>
 </html>
 ```
 
 Key design rules:
+
 - Max width `600px`, centered, background `#f8fafc`.
 - Brand primary color (match existing Tailwind theme in the app).
 - OTP code displayed in a `letter-spacing: 8px; font-size: 36px; font-weight: 700` block.
@@ -567,8 +584,8 @@ Changes:
     id: number;
     phone: string;
     name: string | null;
-    email: string | null;       // NEW
-    emailVerified: boolean;     // NEW
+    email: string | null; // NEW
+    emailVerified: boolean; // NEW
     hasVoted: boolean;
     createdAt: string;
   }
@@ -594,23 +611,23 @@ On `admin/dashboard`, add a count tile: **"Voters with verified email: X / Y"** 
 
 All existing mechanisms are **preserved**:
 
-| Layer | Mechanism | Status |
-|---|---|---|
-| DB constraint | `@@unique([voterId, position])` — one vote per position per voter | ✅ Unchanged |
-| Voter flag | `hasVoted = true` set atomically in `vote/submit` | ✅ Unchanged |
-| Device fingerprint | `deviceHash` stored on first OTP verify, checked on re-entry | ✅ Unchanged |
-| OTP expiry | 5 minutes TTL | ✅ Unchanged |
-| OTP attempt lock | 3 wrong attempts → code invalidated | ✅ Unchanged |
-| Rate limiting | Max 5 OTPs per phone per hour | ✅ Unchanged |
+| Layer              | Mechanism                                                         | Status       |
+| ------------------ | ----------------------------------------------------------------- | ------------ |
+| DB constraint      | `@@unique([voterId, position])` — one vote per position per voter | ✅ Unchanged |
+| Voter flag         | `hasVoted = true` set atomically in `vote/submit`                 | ✅ Unchanged |
+| Device fingerprint | `deviceHash` stored on first OTP verify, checked on re-entry      | ✅ Unchanged |
+| OTP expiry         | 5 minutes TTL                                                     | ✅ Unchanged |
+| OTP attempt lock   | 3 wrong attempts → code invalidated                               | ✅ Unchanged |
+| Rate limiting      | Max 5 OTPs per phone per hour                                     | ✅ Unchanged |
 
 **New mechanisms added:**
 
-| Layer | Mechanism |
-|---|---|
-| Email uniqueness | `@@unique([email])` on `Voter` — one email per account, no sharing |
-| Email ownership proof | Phase A OTP to email must succeed before `emailVerified = true` |
-| Vote gate | `request-otp` hard-blocks voters with `emailVerified = false` |
-| Email change audit | Admin email overwrites reset `emailVerified = false` + audit log |
+| Layer                   | Mechanism                                                                                                        |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Email uniqueness        | `@@unique([email])` on `Voter` — one email per account, no sharing                                               |
+| Email ownership proof   | Phase A OTP to email must succeed before `emailVerified = true`                                                  |
+| Vote gate               | `request-otp` hard-blocks voters with `emailVerified = false`                                                    |
+| Email change audit      | Admin email overwrites reset `emailVerified = false` + audit log                                                 |
 | OTP purpose segregation | `OtpRequest.purpose` distinguishes `VOTE` vs `EMAIL_REG` — a registration OTP cannot authenticate a vote session |
 
 ---
@@ -714,9 +731,11 @@ These map to Prisma migration files generated via `npx prisma migrate dev --name
 ### `africastalking` npm package
 
 After fully confirmed migration:
+
 ```bash
 npm uninstall africastalking
 ```
+
 Remove from `package.json` and `@types/africastalking` from devDependencies.
 
 ---
@@ -726,6 +745,7 @@ Remove from `package.json` and `@types/africastalking` from devDependencies.
 Work through these in order. Each task should be a separate commit/PR.
 
 ### Database & Schema
+
 - [ ] Write Prisma migration 1: add `email`, `emailVerified` to `Voter`
 - [ ] Write Prisma migration 2: update `OtpRequest` (`phone` nullable, add `email`, add `purpose`)
 - [ ] Write Prisma migration 3: create `EmailLog` model
@@ -733,6 +753,7 @@ Work through these in order. Each task should be a separate commit/PR.
 - [ ] Run `npx prisma generate`
 
 ### Email Library
+
 - [ ] Install `resend` package
 - [ ] Create `lib/email.ts` with `sendEmail`, `sendEmailOTP`, `sendEmailVerificationOTP`, `tryEmailSend`, `maskEmail`
 - [ ] Build HTML template: **OTP vote-day** (subject, full HTML, inline styles)
@@ -742,42 +763,50 @@ Work through these in order. Each task should be a separate commit/PR.
 - [ ] Test live mode with a real Resend API key against your domain
 
 ### OTP Library Refactor
+
 - [ ] Update `sendOTP(phone, voterEmail, ipAddress)` signature — remove `sendSMS`, add `sendEmailOTP`
 - [ ] Add `sendEmailRegistrationOTP(email, phone, ipAddress)` function
 - [ ] Add `verifyOTPByEmail(email, code)` function
 - [ ] Add `getOTPRateLimitStateByEmail(email, ipAddress)` function
 
 ### Phase A — Email Registration API
+
 - [ ] Create `app/api/voter/register-email/route.ts`
 - [ ] Create `app/api/voter/register-email/verify/route.ts`
 - [ ] Add uniqueness check: reject if email already belongs to another verified voter
 - [ ] Write integration tests (manually test all error states)
 
 ### Phase B — Vote Auth API
+
 - [ ] Modify `app/api/vote/auth/request-otp/route.ts`: add `emailVerified` guard, pass email to `sendOTP`, return `maskedEmail`
 - [ ] Confirm `app/api/vote/auth/verify-otp/route.ts` requires no changes
 
 ### Admin API
+
 - [ ] Update `GET /api/admin/voters` to return `email` + `emailVerified`
 - [ ] Update `PATCH /api/admin/voters/[id]` to accept `email`, reset `emailVerified`, log audit
 - [ ] Update `POST /api/admin/voters/bulk` to parse and validate optional `email` CSV column
 
 ### Frontend — New
+
 - [ ] Create `app/(public)/register-email/page.tsx`
 - [ ] Create `components/voter/EmailRegistrationCard.tsx` (4-step: PHONE → EMAIL_ENTRY → OTP_VERIFY → SUCCESS)
 
 ### Frontend — Modified
+
 - [ ] Update `AuthCard.tsx`: show `maskedEmail` after OTP dispatch; add "no verified email" CTA
 - [ ] Update `components/admin/AddVoterModal.tsx`: add email field
 - [ ] Update `components/admin/VoterImportModal.tsx`: document `email` CSV column
 - [ ] Update admin voters page: add Email + Email Status columns + TypeScript interface
 
 ### Environment & Config
+
 - [ ] Add `RESEND_API_KEY` and `RESEND_FROM` to `.env.local` and production environment
 - [ ] Add `EMAIL_REG_OTP_TTL_SECONDS=600` to environment
 - [ ] Comment out (do not delete yet) `AT_USERNAME`, `AT_API_KEY`, `AT_SENDER_ID`
 
 ### Cleanup (final PR after full validation)
+
 - [ ] Deprecate `lib/sms.ts` with JSDoc comment
 - [ ] Decommission `app/api/webhooks/sms/delivery-report/route.ts`
 - [ ] Uninstall `africastalking` and `@types/africastalking`
@@ -785,4 +814,4 @@ Work through these in order. Each task should be a separate commit/PR.
 
 ---
 
-*Plan authored for `ELC_IEC_mu-main` · April 2026*
+_Plan authored for `ELC_IEC_mu-main` · April 2026_

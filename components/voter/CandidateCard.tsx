@@ -19,7 +19,7 @@ export default function CandidateCard({ candidate, selected, onSelect }: { candi
     >
       <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full border ${selected ? 'border-brand-400 bg-brand-500 text-white' : 'border-slate-500'}`}>{selected ? '✓' : ''}</span>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={candidate.photoUrl} alt={candidate.name} className="h-14 w-14 rounded-full object-cover" />
+      <img src={candidate?.photoUrl || '/placeholder-avatar.png'} alt={candidate?.name || 'Candidate'} className="h-14 w-14 rounded-full object-cover" />
       <div>
         <p className="font-semibold text-white">{candidate.name}</p>
         <p className="text-xs text-slate-400">{candidate.school}</p>
