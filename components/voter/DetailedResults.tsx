@@ -306,7 +306,7 @@ export default function DetailedResults({
                 {position.candidates.map((candidate, idx) => (
                   <div
                     key={candidate.id}
-                    className={`relative p-4 sm:p-5 rounded-3xl transition-all duration-300 group/item border overflow-hidden ${
+                    className={`relative p-5 sm:p-6 rounded-[2rem] sm:rounded-[2.5rem] transition-all duration-300 group/item border flex flex-col items-center text-center overflow-hidden ${
                       idx === 0 
                         ? 'bg-gradient-to-br from-brand-500/10 to-transparent border-brand-500/30 shadow-lg shadow-brand-500/5' 
                         : 'bg-white/5 border-white/10 hover:border-white/20 hover:bg-white/[0.08]'
@@ -318,57 +318,54 @@ export default function DetailedResults({
                       </div>
                     )}
                     
-                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 relative z-0">
-                      {/* Candidate Avatar/Photo */}
-                      <div className="relative shrink-0 pt-4 sm:pt-0 mx-auto sm:mx-0">
-                        <div
-                          className={`w-36 h-36 sm:w-40 sm:h-40 rounded-full sm:rounded-[2.5rem] overflow-hidden bg-slate-800 border-4 transition-transform duration-500 group-hover/item:scale-[1.02] ${
-                            idx === 0
-                              ? "border-brand-500/80 shadow-[0_0_40px_rgba(163,42,41,0.2)]"
-                              : "border-white/10"
-                          }`}
-                        >
-                          <Image
-                            src={candidate?.photoUrl || "/placeholder-avatar.png"}
-                            alt={candidate?.name || "Candidate"}
-                            className="w-full h-full object-cover"
-                            width={128}
-                            height={128}
-                            unoptimized={!!candidate?.photoUrl}
-                          />
-                        </div>
+                    {/* Candidate Avatar/Photo */}
+                    <div className="relative shrink-0 mb-5 sm:mb-6 mt-2">
+                      <div
+                        className={`w-36 h-36 sm:w-44 sm:h-44 rounded-full overflow-hidden bg-slate-800 border-4 transition-transform duration-500 group-hover/item:scale-[1.02] ${
+                          idx === 0
+                            ? "border-brand-500/80 shadow-[0_0_40px_rgba(163,42,41,0.2)]"
+                            : "border-white/10"
+                        }`}
+                      >
+                        <Image
+                          src={candidate?.photoUrl || "/placeholder-avatar.png"}
+                          alt={candidate?.name || "Candidate"}
+                          className="w-full h-full object-cover"
+                          width={176}
+                          height={176}
+                          unoptimized={!!candidate?.photoUrl}
+                        />
                       </div>
+                    </div>
 
-                      {/* Candidate Details */}
-                      <div className="flex-grow min-w-0 w-full text-center sm:text-left flex flex-col justify-between">
-                         {/* Name & Stats Row */}
-                         <div className="flex flex-col sm:flex-row justify-between items-center sm:items-start gap-4 mb-4 sm:mb-2">
-                           <div className="min-w-0">
-                             <h4 className="font-black text-white text-xl sm:text-2xl tracking-tight leading-tight mb-2 sm:mb-1">
-                               {candidate.name}
-                             </h4>
-                             <div className="flex flex-col items-center sm:items-start gap-1.5 mt-1">
-                               <p className="text-xs sm:text-sm text-slate-300 font-medium flex items-center justify-center sm:justify-start gap-2">
-                                 <svg className="w-4 h-4 text-brand-500/80 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-                                 <span className="truncate">{candidate.school}</span>
-                               </p>
-                               <p className="text-xs sm:text-sm text-slate-400 font-bold uppercase tracking-wider flex items-center justify-center sm:justify-start gap-2">
-                                 <svg className="w-4 h-4 text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                 <span className="truncate">{candidate.yearOfStudy}</span>
-                               </p>
-                             </div>
-                           </div>
-                           
-                           {/* Vote Count Badge */}
-                           <div className="shrink-0 bg-surface-900/60 sm:bg-white/5 px-6 py-3 sm:px-5 sm:py-3 rounded-[1.5rem] border border-white/5 backdrop-blur-sm text-center min-w-[120px] mt-2 sm:mt-0 shadow-inner">
-                             <span className="text-brand-400 font-black text-3xl sm:text-4xl block leading-none tracking-tighter">
-                               <NumberCounter value={candidate.votes} />
-                             </span>
-                             <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest opacity-80 mt-1.5 block">
-                               Votes
-                             </span>
-                           </div>
+                    {/* Candidate Details */}
+                    <div className="w-full flex flex-col flex-grow justify-between">
+                       {/* Name & Stats Row */}
+                       <div className="mb-5 sm:mb-6">
+                         <h4 className="font-black text-white text-2xl sm:text-3xl tracking-tight leading-tight mb-2 sm:mb-3 px-2 line-clamp-2">
+                           {candidate.name}
+                         </h4>
+                         <div className="flex flex-col items-center gap-1.5 mt-1">
+                           <p className="text-sm sm:text-base text-slate-300 font-medium flex items-center justify-center gap-2">
+                             <svg className="w-4 h-4 text-brand-500/80 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                             <span className="truncate">{candidate.school}</span>
+                           </p>
+                           <p className="text-xs sm:text-sm text-slate-400 font-bold uppercase tracking-wider flex items-center justify-center gap-2">
+                             <svg className="w-4 h-4 text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                             <span className="truncate">{candidate.yearOfStudy}</span>
+                           </p>
                          </div>
+                       </div>
+                       
+                       {/* Vote Count Badge */}
+                       <div className="bg-surface-900/60 sm:bg-surface-900/40 w-full py-4 sm:py-5 rounded-[1.5rem] border border-white/5 backdrop-blur-sm text-center mb-4 sm:mb-5 shadow-inner">
+                         <span className="text-brand-400 font-black text-4xl sm:text-5xl block leading-none tracking-tighter">
+                           <NumberCounter value={candidate.votes} />
+                         </span>
+                         <span className="text-[11px] sm:text-xs text-slate-500 font-black uppercase tracking-widest opacity-80 mt-2 block">
+                           Total Votes
+                         </span>
+                       </div>
 
                         {/* Progress Bar */}
                         <div className="space-y-2 mt-2 sm:mt-auto pt-2">
@@ -390,7 +387,6 @@ export default function DetailedResults({
                           </div>
                         </div>
                       </div>
-                    </div>
                   </div>
                 ))}
               </div>
