@@ -306,77 +306,79 @@ export default function DetailedResults({
                 {position.candidates.map((candidate, idx) => (
                   <div
                     key={candidate.id}
-                    className="relative p-3 rounded-2xl transition-all duration-300 group/item hover:bg-white/[0.03] border border-transparent hover:border-white/5"
+                    className={`relative p-4 sm:p-5 rounded-3xl transition-all duration-300 group/item border overflow-hidden ${
+                      idx === 0 
+                        ? 'bg-gradient-to-br from-brand-500/10 to-transparent border-brand-500/30 shadow-lg shadow-brand-500/5' 
+                        : 'bg-white/5 border-white/10 hover:border-white/20 hover:bg-white/[0.08]'
+                    }`}
                   >
-                    <div className="flex items-start gap-4 md:gap-6">
+                    {idx === 0 && (
+                      <div className="absolute top-4 right-4 bg-gradient-to-r from-brand-600 to-accent-600 text-[10px] sm:text-xs font-black px-3 py-1 rounded-full text-white border border-white/20 shadow-xl backdrop-blur-md uppercase tracking-widest z-10">
+                        Current Leader
+                      </div>
+                    )}
+                    
+                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 relative z-0">
                       {/* Candidate Avatar/Photo */}
-                      <div className="relative shrink-0 mt-1">
+                      <div className="relative shrink-0 pt-4 sm:pt-0 mx-auto sm:mx-0">
                         <div
-                          className={`absolute inset-0 bg-brand-500/20 blur-xl rounded-full opacity-0 transition-opacity duration-500 ${idx === 0 ? "opacity-30" : ""}`}
-                        />
-                        <div
-                          className={`w-16 h-16 md:w-24 md:h-24 rounded-2xl md:rounded-[2rem] overflow-hidden bg-slate-800 border-2 transition-all duration-500 group-hover/item:scale-[1.02] group-hover/item:rotate-1 ${
+                          className={`w-36 h-36 sm:w-40 sm:h-40 rounded-full sm:rounded-[2.5rem] overflow-hidden bg-slate-800 border-4 transition-transform duration-500 group-hover/item:scale-[1.02] ${
                             idx === 0
-                              ? "border-brand-500 shadow-[0_0_30px_rgba(163,42,41,0.2)]"
+                              ? "border-brand-500/80 shadow-[0_0_40px_rgba(163,42,41,0.2)]"
                               : "border-white/10"
                           }`}
                         >
                           <Image
-                            src={
-                              candidate?.photoUrl || "/placeholder-avatar.png"
-                            }
+                            src={candidate?.photoUrl || "/placeholder-avatar.png"}
                             alt={candidate?.name || "Candidate"}
                             className="w-full h-full object-cover"
-                            width={96}
-                            height={96}
+                            width={128}
+                            height={128}
                             unoptimized={!!candidate?.photoUrl}
                           />
                         </div>
-                        {idx === 0 && (
-                          <div className="absolute -top-2 -left-2 bg-gradient-to-r from-brand-600 to-accent-600 text-[9px] font-black px-2.5 py-1 rounded-lg text-white border border-white/20 shadow-xl backdrop-blur-md">
-                            LEADER
-                          </div>
-                        )}
                       </div>
 
                       {/* Candidate Details */}
-                      <div className="flex-grow min-w-0 pt-1">
-                        <div className="flex justify-between items-start mb-2">
-                          <div className="min-w-0">
-                            <h4 className="font-black text-white text-base md:text-xl truncate tracking-tight group-hover/item:text-brand-400 transition-colors leading-tight">
-                              {candidate.name}
-                            </h4>
-                            <div className="flex flex-col gap-0.5 mt-1">
-                              <p className="text-[10px] md:text-xs text-slate-400 font-medium flex items-center gap-1.5">
-                                <svg className="w-3 h-3 text-brand-500/50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-                                {candidate.school}
-                              </p>
-                              <p className="text-[10px] md:text-xs text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                                <svg className="w-3 h-3 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                {candidate.yearOfStudy}
-                              </p>
-                            </div>
-                          </div>
-                          
-                          <div className="text-right shrink-0 bg-white/5 px-3 py-1.5 rounded-xl border border-white/5 backdrop-blur-sm">
-                            <span className="text-brand-400 font-black text-lg md:text-2xl block leading-none tracking-tighter">
-                              <NumberCounter value={candidate.votes} />
-                            </span>
-                            <span className="text-[8px] md:text-[9px] text-slate-500 font-black uppercase tracking-widest opacity-80">
-                              Votes
-                            </span>
-                          </div>
-                        </div>
+                      <div className="flex-grow min-w-0 w-full text-center sm:text-left flex flex-col justify-between">
+                         {/* Name & Stats Row */}
+                         <div className="flex flex-col sm:flex-row justify-between items-center sm:items-start gap-4 mb-4 sm:mb-2">
+                           <div className="min-w-0">
+                             <h4 className="font-black text-white text-xl sm:text-2xl tracking-tight leading-tight mb-2 sm:mb-1">
+                               {candidate.name}
+                             </h4>
+                             <div className="flex flex-col items-center sm:items-start gap-1.5 mt-1">
+                               <p className="text-xs sm:text-sm text-slate-300 font-medium flex items-center justify-center sm:justify-start gap-2">
+                                 <svg className="w-4 h-4 text-brand-500/80 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                                 <span className="truncate">{candidate.school}</span>
+                               </p>
+                               <p className="text-xs sm:text-sm text-slate-400 font-bold uppercase tracking-wider flex items-center justify-center sm:justify-start gap-2">
+                                 <svg className="w-4 h-4 text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                 <span className="truncate">{candidate.yearOfStudy}</span>
+                               </p>
+                             </div>
+                           </div>
+                           
+                           {/* Vote Count Badge */}
+                           <div className="shrink-0 bg-surface-900/60 sm:bg-white/5 px-6 py-3 sm:px-5 sm:py-3 rounded-[1.5rem] border border-white/5 backdrop-blur-sm text-center min-w-[120px] mt-2 sm:mt-0 shadow-inner">
+                             <span className="text-brand-400 font-black text-3xl sm:text-4xl block leading-none tracking-tighter">
+                               <NumberCounter value={candidate.votes} />
+                             </span>
+                             <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest opacity-80 mt-1.5 block">
+                               Votes
+                             </span>
+                           </div>
+                         </div>
 
                         {/* Progress Bar */}
-                        <div className="space-y-1.5">
-                          <div className="flex justify-between text-[10px] font-bold">
-                            <span className="text-slate-500 uppercase tracking-tighter">Vote Share</span>
-                            <span className="text-brand-400">{candidate.percentage}%</span>
+                        <div className="space-y-2 mt-2 sm:mt-auto pt-2">
+                          <div className="flex justify-between items-end text-xs font-bold px-1">
+                            <span className="text-slate-400 uppercase tracking-widest">Vote Share</span>
+                            <span className="text-brand-400 text-sm sm:text-base">{candidate.percentage}%</span>
                           </div>
-                          <div className={`h-2 md:h-2.5 w-full bg-white/5 rounded-full overflow-hidden ${justUpdated ? "animate-brief-scale" : ""}`}>
+                          <div className={`h-3 sm:h-3.5 w-full bg-surface-900/80 rounded-full overflow-hidden border border-white/5 shadow-inner ${justUpdated ? "animate-brief-scale" : ""}`}>
                             <div
-                              className={`h-full bg-gradient-to-r from-brand-700 via-brand-500 to-accent-500 transition-all duration-1000 ease-out relative rounded-full ${
+                              className={`h-full bg-gradient-to-r from-brand-600 via-brand-500 to-accent-500 transition-all duration-1000 ease-out relative rounded-full ${
                                 idx === 0
                                   ? "after:absolute after:inset-0 after:bg-white/20 after:animate-shimmer"
                                   : ""

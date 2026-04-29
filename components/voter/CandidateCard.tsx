@@ -38,8 +38,8 @@ export default function CandidateCard({ candidate, selected, onSelect }: { candi
       {/* Candidate Photo */}
       <div className="relative shrink-0">
         <div className={`absolute inset-0 bg-brand-500/20 blur-2xl rounded-full transition-opacity duration-500 ${selected ? 'opacity-40' : 'opacity-0'}`} />
-        <div className={`w-32 h-32 sm:w-36 sm:h-36 rounded-[1.75rem] overflow-hidden border-2 transition-all duration-500 group-hover:scale-[1.03] ${
-          selected ? 'border-brand-500 shadow-2xl shadow-brand-500/20' : 'border-white/10'
+        <div className={`w-36 h-36 sm:w-40 sm:h-40 rounded-full sm:rounded-[2rem] overflow-hidden border-4 transition-all duration-500 group-hover:scale-[1.03] ${
+          selected ? 'border-brand-500 shadow-2xl shadow-brand-500/30' : 'border-white/10'
         }`}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img 
