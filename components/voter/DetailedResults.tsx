@@ -306,17 +306,18 @@ export default function DetailedResults({
                 {position.candidates.map((candidate, idx) => (
                   <div
                     key={candidate.id}
-                    className="relative space-y-3 group/item"
+                    className="relative p-3 rounded-2xl transition-all duration-300 group/item hover:bg-white/[0.03] border border-transparent hover:border-white/5"
                   >
-                    <div className="flex items-center gap-3 md:gap-4">
-                      <div className="relative shrink-0">
+                    <div className="flex items-start gap-4 md:gap-6">
+                      {/* Candidate Avatar/Photo */}
+                      <div className="relative shrink-0 mt-1">
                         <div
-                          className={`absolute inset-0 bg-brand-500/20 blur-lg rounded-full opacity-0 transition-opacity duration-500 ${idx === 0 ? "opacity-40" : ""}`}
+                          className={`absolute inset-0 bg-brand-500/20 blur-xl rounded-full opacity-0 transition-opacity duration-500 ${idx === 0 ? "opacity-30" : ""}`}
                         />
                         <div
-                          className={`w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl overflow-hidden bg-slate-800 border-2 transition-transform duration-500 group-hover/item:scale-105 ${
+                          className={`w-16 h-16 md:w-24 md:h-24 rounded-2xl md:rounded-[2rem] overflow-hidden bg-slate-800 border-2 transition-all duration-500 group-hover/item:scale-[1.02] group-hover/item:rotate-1 ${
                             idx === 0
-                              ? "border-brand-500 shadow-[0_0_15px_rgba(163,42,41,0.3)]"
+                              ? "border-brand-500 shadow-[0_0_30px_rgba(163,42,41,0.2)]"
                               : "border-white/10"
                           }`}
                         >
@@ -326,45 +327,65 @@ export default function DetailedResults({
                             }
                             alt={candidate?.name || "Candidate"}
                             className="w-full h-full object-cover"
-                            width={64}
-                            height={64}
+                            width={96}
+                            height={96}
                             unoptimized={!!candidate?.photoUrl}
                           />
                         </div>
                         {idx === 0 && (
-                          <div className="absolute -top-1.5 -right-1.5 bg-brand-600 text-[8px] font-black px-1.5 py-0.5 rounded-full text-white border border-white/20 shadow-lg">
+                          <div className="absolute -top-2 -left-2 bg-gradient-to-r from-brand-600 to-accent-600 text-[9px] font-black px-2.5 py-1 rounded-lg text-white border border-white/20 shadow-xl backdrop-blur-md">
                             LEADER
                           </div>
                         )}
                       </div>
 
-                      <div className="flex-grow min-w-0">
-                        <div className="flex justify-between items-end mb-1.5">
-                          <span className="font-black text-white text-xs md:text-sm truncate pr-2 tracking-tight group-hover/item:text-brand-400 transition-colors">
-                            {candidate.name.split(" ")[0]}{" "}
-                            {candidate.name.split(" ")[1]?.[0]}.
-                          </span>
-                          <div className="text-right shrink-0">
-                            <span className="text-brand-400 font-black text-sm md:text-base block leading-none">
+                      {/* Candidate Details */}
+                      <div className="flex-grow min-w-0 pt-1">
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="min-w-0">
+                            <h4 className="font-black text-white text-base md:text-xl truncate tracking-tight group-hover/item:text-brand-400 transition-colors leading-tight">
+                              {candidate.name}
+                            </h4>
+                            <div className="flex flex-col gap-0.5 mt-1">
+                              <p className="text-[10px] md:text-xs text-slate-400 font-medium flex items-center gap-1.5">
+                                <svg className="w-3 h-3 text-brand-500/50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                                {candidate.school}
+                              </p>
+                              <p className="text-[10px] md:text-xs text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                                <svg className="w-3 h-3 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                {candidate.yearOfStudy}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <div className="text-right shrink-0 bg-white/5 px-3 py-1.5 rounded-xl border border-white/5 backdrop-blur-sm">
+                            <span className="text-brand-400 font-black text-lg md:text-2xl block leading-none tracking-tighter">
                               <NumberCounter value={candidate.votes} />
                             </span>
-                            <span className="text-[7px] md:text-[8px] text-slate-500 font-bold uppercase tracking-tighter">
+                            <span className="text-[8px] md:text-[9px] text-slate-500 font-black uppercase tracking-widest opacity-80">
                               Votes
                             </span>
                           </div>
                         </div>
 
-                        <div className={`h-1.5 md:h-2 w-full bg-white/5 rounded-full overflow-hidden ${justUpdated ? "animate-brief-scale" : ""}`}>
-                          <div
-                            className={`h-full bg-gradient-to-r from-brand-700 to-brand-500 transition-all duration-1000 ease-out relative ${
-                              idx === 0
-                                ? "after:absolute after:inset-0 after:bg-white/20 after:animate-shimmer"
-                                : ""
-                            }`}
-                            style={{
-                              width: `${Math.max(candidate.percentage, 1)}%`,
-                            }}
-                          ></div>
+                        {/* Progress Bar */}
+                        <div className="space-y-1.5">
+                          <div className="flex justify-between text-[10px] font-bold">
+                            <span className="text-slate-500 uppercase tracking-tighter">Vote Share</span>
+                            <span className="text-brand-400">{candidate.percentage}%</span>
+                          </div>
+                          <div className={`h-2 md:h-2.5 w-full bg-white/5 rounded-full overflow-hidden ${justUpdated ? "animate-brief-scale" : ""}`}>
+                            <div
+                              className={`h-full bg-gradient-to-r from-brand-700 via-brand-500 to-accent-500 transition-all duration-1000 ease-out relative rounded-full ${
+                                idx === 0
+                                  ? "after:absolute after:inset-0 after:bg-white/20 after:animate-shimmer"
+                                  : ""
+                              }`}
+                              style={{
+                                width: `${Math.max(candidate.percentage, 1)}%`,
+                              }}
+                            ></div>
+                          </div>
                         </div>
                       </div>
                     </div>
