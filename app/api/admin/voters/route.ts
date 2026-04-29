@@ -5,6 +5,7 @@ import { success, error, serverError } from "@/lib/response";
 import { normalizePhone } from "@/lib/phone";
 import { requireAdminSession } from "@/lib/admin-auth";
 import { logAudit } from "@/lib/audit";
+import { Prisma } from "@/app/generated/prisma/client";
 
 // Schema for adding a single voter
 const addVoterSchema = z.object({
@@ -22,26 +23,46 @@ export async function GET(req: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "50");
     const search = searchParams.get("search") || "";
+    const filter = searchParams.get("filter") || "all";
 
     const skip = (page - 1) * limit;
 
-    const where = search
-      ? {
-          OR: [
-            { phone: { contains: search } },
-            { name: { contains: search, mode: "insensitive" as const } },
-          ],
-        }
-      : {};
+    const statusFilter: Prisma.VoterWhereInput =
+      filter === 'registered'   ? { emailVerified: true } :
+      filter === 'unregistered' ? { OR: [{ emailVerified: false }, { email: null }] } :
+      filter === 'voted'        ? { hasVoted: true } :
+      filter === 'not_voted'    ? { hasVoted: false } : {};
 
-    const [voters, total] = await Promise.all([
+    const where: Prisma.VoterWhereInput = {
+      ...statusFilter,
+      ...(search ? {
+        OR: [
+          { phone: { contains: search } },
+          { name: { contains: search, mode: "insensitive" as const } },
+          { email: { contains: search, mode: "insensitive" as const } },
+        ],
+      } : {})
+    };
+
+    const [voters, total, counts] = await Promise.all([
       prisma.voter.findMany({
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: "desc" },
+        orderBy: [
+          { emailVerified: "desc" },
+          { createdAt: "desc" },
+        ],
       }),
       prisma.voter.count({ where }),
+      Promise.all([
+        prisma.voter.count(),
+        prisma.voter.count({ where: { emailVerified: true } }),
+        prisma.voter.count({ where: { OR: [{ emailVerified: false }, { email: null }] } }),
+        prisma.voter.count({ where: { hasVoted: true } }),
+      ]).then(([all, registered, unregistered, voted]) => ({
+        all, registered, unregistered, voted
+      }))
     ]);
 
     return success(voters, 200, {
@@ -49,6 +70,7 @@ export async function GET(req: NextRequest) {
       page,
       limit,
       totalPages: Math.ceil(total / limit),
+      counts
     });
   } catch (err) {
     return serverError(err);

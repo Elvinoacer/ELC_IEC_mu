@@ -20,7 +20,8 @@ export interface PositionResult {
 
 export interface TurnoutStats {
   voted: number;
-  total: number;
+  total: number;          // registered (eligible) voters
+  totalInSystem: number;  // all phone numbers imported
   percentage: number;
 }
 
@@ -35,8 +36,9 @@ export interface ResultsPayload {
 export async function generateResultsPayload(options?: {
   includeCandidateResults?: boolean;
 }): Promise<ResultsPayload> {
-  const [total, voted, config, dbPositions] = await Promise.all([
+  const [totalInSystem, totalRegistered, totalVoted, config, dbPositions] = await Promise.all([
     prisma.voter.count(),
+    prisma.voter.count({ where: { emailVerified: true } }),
     prisma.voter.count({ where: { hasVoted: true } }),
     prisma.votingConfig.findFirst({
       orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
@@ -106,9 +108,10 @@ export async function generateResultsPayload(options?: {
   return {
     positions,
     turnout: {
-      voted,
-      total,
-      percentage: total > 0 ? Number(((voted / total) * 100).toFixed(1)) : 0,
+      voted: totalVoted,
+      total: totalRegistered, // Denominator is registered voters
+      totalInSystem,
+      percentage: totalRegistered > 0 ? Number(((totalVoted / totalRegistered) * 100).toFixed(1)) : 0,
     },
     isOpen,
     showCandidateResults,

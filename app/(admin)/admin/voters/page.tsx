@@ -17,35 +17,46 @@ interface Voter {
   createdAt: string;
 }
 
+interface MetaCounts {
+  all: number;
+  registered: number;
+  unregistered: number;
+  voted: number;
+}
+
 export default function AdminVotersPage() {
   const [voters, setVoters] = useState<Voter[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("all");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalVoters, setTotalVoters] = useState(0);
+  const [counts, setCounts] = useState<MetaCounts>({ all: 0, registered: 0, unregistered: 0, voted: 0 });
 
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   const fetchVoters = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch(
-        `/api/admin/voters?page=${page}&limit=10&search=${encodeURIComponent(search)}`,
+        `/api/admin/voters?page=${page}&limit=10&search=${encodeURIComponent(search)}&filter=${filter}`,
       );
       const json = await res.json();
       if (res.ok) {
         setVoters(json.data);
         setTotalPages(json.meta.totalPages);
         setTotalVoters(json.meta.total);
+        if (json.meta.counts) setCounts(json.meta.counts);
       }
     } catch (err) {
       console.error("Failed to fetch voters:", err);
     } finally {
       setLoading(false);
     }
-  }, [page, search]);
+  }, [page, search, filter]);
 
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
@@ -102,7 +113,6 @@ export default function AdminVotersPage() {
     if (newEmailInput === null) return;
     const newEmail = newEmailInput.trim();
 
-    // If changing email, we might need a reason (backend will enforce if not SUPER_ADMIN)
     let reason = "";
     if (newEmail !== (currentEmail || "")) {
       const reasonInput = window.prompt(
@@ -171,36 +181,109 @@ export default function AdminVotersPage() {
     }
   };
 
+  const handlePdfExport = async () => {
+    setPdfLoading(true);
+    try {
+      const res = await fetch(`/api/admin/voters/export-pdf?filter=${filter}`);
+      if (!res.ok) throw new Error("Failed to generate PDF");
+      
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `voters_${filter}_${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      alert("Error exporting PDF");
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
   return (
     <AdminShell title="Voter Registry">
       <div className="fade-in space-y-6">
+        {/* Summary Mini-Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+          <div className="bg-surface-800 border border-white/5 rounded-xl p-3 flex flex-col items-center text-center">
+            <span className="text-[10px] text-slate-500 uppercase font-bold">In System</span>
+            <span className="text-xl font-bold text-white">{counts.all}</span>
+          </div>
+          <div className="bg-surface-800 border border-white/5 rounded-xl p-3 flex flex-col items-center text-center">
+            <span className="text-[10px] text-brand-400 uppercase font-bold">Registered</span>
+            <span className="text-xl font-bold text-white">{counts.registered}</span>
+          </div>
+          <div className="bg-surface-800 border border-white/5 rounded-xl p-3 flex flex-col items-center text-center">
+            <span className="text-[10px] text-slate-500 uppercase font-bold">Phone-Only</span>
+            <span className="text-xl font-bold text-white">{counts.unregistered}</span>
+          </div>
+          <div className="bg-surface-800 border border-white/5 rounded-xl p-3 flex flex-col items-center text-center">
+            <span className="text-[10px] text-success-400 uppercase font-bold">Voted</span>
+            <span className="text-xl font-bold text-white">{counts.voted}</span>
+          </div>
+        </div>
+
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <p className="text-sm text-slate-400">
-              Manage the voter registry. Total:
-              <span className="text-white font-medium">{totalVoters}</span>
-            </p>
+          <div className="flex flex-wrap gap-1">
+            {[
+              { id: 'all', label: 'All' },
+              { id: 'registered', label: 'Registered ✓' },
+              { id: 'unregistered', label: 'Not Registered' },
+              { id: 'voted', label: 'Voted' },
+              { id: 'not_voted', label: 'Not Voted' }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => { setFilter(tab.id); setPage(1); }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  filter === tab.id 
+                    ? 'bg-brand-600 text-white shadow-lg' 
+                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
           <div className="flex gap-2">
+            <button
+              onClick={handlePdfExport}
+              disabled={pdfLoading}
+              className="px-4 py-2 rounded-xl text-sm font-medium text-slate-300 border border-white/10 hover:bg-white/5 transition-all flex items-center gap-2"
+            >
+              {pdfLoading ? (
+                <div className="w-3 h-3 border-2 border-slate-500 border-t-slate-300 rounded-full animate-spin" />
+              ) : (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+              )}
+              {pdfLoading ? 'PDF...' : 'PDF'}
+            </button>
             <a
               href="/api/admin/voters/export"
               target="_blank"
               rel="noopener noreferrer"
-              className="px-4 py-2 rounded-xl text-sm font-medium text-slate-300 border border-white/10 hover:bg-white/5 transition-all"
+              className="px-4 py-2 rounded-xl text-sm font-medium text-slate-300 border border-white/10 hover:bg-white/5 transition-all flex items-center gap-2"
             >
-              Export CSV
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              CSV
             </a>
             <button
               onClick={() => setIsImportOpen(true)}
               className="px-4 py-2 rounded-xl text-sm font-medium text-brand-400 border border-brand-500/20 hover:bg-brand-600/15 transition-all"
             >
-              Import CSV
+              Import
             </button>
             <button
               onClick={() => setIsAddOpen(true)}
               className="px-4 py-2 rounded-xl text-sm font-medium bg-brand-600 text-white hover:bg-brand-500 transition-all shadow-lg"
             >
-              Add Voter
+              + Voter
             </button>
           </div>
         </div>
@@ -224,7 +307,7 @@ export default function AdminVotersPage() {
               </svg>
               <input
                 type="text"
-                placeholder="Search phone or name..."
+                placeholder="Search phone, name or email..."
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
@@ -240,10 +323,10 @@ export default function AdminVotersPage() {
             <table className="w-full text-left text-sm whitespace-nowrap">
               <thead>
                 <tr className="border-b border-glass-border text-slate-400">
+                  <th className="pb-3 font-medium px-4">Status</th>
                   <th className="pb-3 font-medium px-4">Phone Number</th>
                   <th className="pb-3 font-medium px-4">Name</th>
                   <th className="pb-3 font-medium px-4">Email</th>
-                  <th className="pb-3 font-medium px-4">Email Status</th>
                   <th className="pb-3 font-medium px-4">Vote Status</th>
                   <th className="pb-3 font-medium px-4">Added On</th>
                   <th className="pb-3 font-medium px-4 text-right">Actions</th>
@@ -266,8 +349,11 @@ export default function AdminVotersPage() {
                   voters.map((voter) => (
                     <tr
                       key={voter.id}
-                      className="hover:bg-glass-hover transition-colors"
+                      className={`hover:bg-glass-hover transition-colors ${voter.emailVerified ? 'bg-brand-500/[0.02]' : ''}`}
                     >
+                      <td className="py-3 px-4">
+                        <div className={`w-2 h-2 rounded-full ${voter.emailVerified ? 'bg-success-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]' : 'bg-slate-600'}`} />
+                      </td>
                       <td className="py-3 px-4 text-white font-medium">
                         {voter.phone}
                       </td>
@@ -276,22 +362,16 @@ export default function AdminVotersPage() {
                           <span className="text-slate-600 italic">No name</span>
                         )}
                       </td>
-                      <td className="py-3 px-4 text-slate-300">
-                        {voter.email ? (
-                          <span className="truncate max-w-[140px] inline-block" title={voter.email}>
-                            {voter.email}
-                          </span>
-                        ) : (
-                          <span className="text-slate-600 italic">—</span>
-                        )}
-                      </td>
                       <td className="py-3 px-4">
                         {voter.email ? (
-                          <Badge variant={voter.emailVerified ? "success" : "warning"}>
-                            {voter.emailVerified ? "Verified" : "Pending"}
-                          </Badge>
+                          <div className="flex flex-col">
+                            <span className="text-slate-300 text-xs truncate max-w-[140px]">{voter.email}</span>
+                            <span className={`text-[10px] ${voter.emailVerified ? 'text-success-400' : 'text-warning-400'}`}>
+                              {voter.emailVerified ? 'Verified ✓' : 'Pending'}
+                            </span>
+                          </div>
                         ) : (
-                          <span className="text-slate-600 text-xs">—</span>
+                          <span className="text-slate-600 italic">—</span>
                         )}
                       </td>
                       <td className="py-3 px-4">
@@ -299,7 +379,7 @@ export default function AdminVotersPage() {
                           {voter.hasVoted ? "Voted" : "Pending"}
                         </Badge>
                       </td>
-                      <td className="py-3 px-4 text-slate-400">
+                      <td className="py-3 px-4 text-slate-400 text-xs">
                         {new Date(voter.createdAt).toLocaleDateString()}
                       </td>
                       <td className="py-3 px-4 text-right space-x-2">

@@ -83,7 +83,7 @@ export default function DetailedResults({
 
   const positions = useMemo(() => data?.positions ?? [], [data]);
   const turnout = useMemo(
-    () => data?.turnout ?? { voted: 0, total: 0, percentage: 0 },
+    () => data?.turnout ?? { voted: 0, total: 0, totalInSystem: 0, percentage: 0 },
     [data],
   );
   const showCandidateResults = data?.showCandidateResults ?? true;
@@ -141,7 +141,7 @@ export default function DetailedResults({
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-6 mb-6 sm:mb-12">
-        {/* Turnout Card */}
+        {/* Turnout Card (Large Circular) */}
         <div className="md:col-span-4 bg-white/5 backdrop-blur-md border border-white/10 p-4 sm:p-6 rounded-2xl flex flex-col items-center justify-center text-center shadow-2xl">
           <div className="relative w-24 h-24 sm:w-32 sm:h-32 mb-3 sm:mb-4">
             <svg className="w-full h-full transform -rotate-90">
@@ -176,28 +176,39 @@ export default function DetailedResults({
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-2 text-slate-300">
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-              />
-            </svg>
-            <span className="font-medium text-sm">
-              <NumberCounter value={turnout.voted} /> / <NumberCounter value={turnout.total} /> Votes Cast
-            </span>
-          </div>
+          <p className="text-xs text-slate-500 font-medium italic">of registered voters</p>
         </div>
 
-        {/* Dashboard Controls */}
-        <div className="md:col-span-8 bg-white/5 backdrop-blur-md border border-white/10 p-4 sm:p-6 rounded-2xl flex flex-col justify-between shadow-2xl">
+        {/* Voter Breakdown Bento Widget (3-column) */}
+        <div className="md:col-span-8 grid grid-cols-3 gap-3">
+          <div className="bg-white/5 backdrop-blur-md border border-white/10 p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-lg group hover:bg-white/[0.08] transition-all">
+            <span className="text-2xl sm:text-4xl font-bold text-white mb-1">
+              <NumberCounter value={turnout.totalInSystem} />
+            </span>
+            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">In System</span>
+            <span className="text-[9px] text-slate-600 mt-1">Imported phones</span>
+          </div>
+
+          <div className="bg-brand-500/5 backdrop-blur-md border border-brand-500/20 p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-lg group hover:bg-brand-500/10 transition-all">
+            <span className="text-2xl sm:text-4xl font-bold text-white mb-1">
+              <NumberCounter value={turnout.total} />
+            </span>
+            <span className="text-[10px] font-black text-brand-400 uppercase tracking-widest">Registered</span>
+            <span className="text-[9px] text-slate-600 mt-1">Verified emails</span>
+          </div>
+
+          <div className="bg-success-500/5 backdrop-blur-md border border-success-500/20 p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-lg group hover:bg-success-500/10 transition-all">
+            <span className="text-2xl sm:text-4xl font-bold text-white mb-1">
+              <NumberCounter value={turnout.voted} />
+            </span>
+            <span className="text-[10px] font-black text-success-400 uppercase tracking-widest">Votes Cast</span>
+            <span className="text-[9px] text-slate-600 mt-1">{turnout.percentage}% turnout</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="mb-6 sm:mb-12">
+        <div className="bg-white/5 backdrop-blur-md border border-white/10 p-4 sm:p-6 rounded-2xl flex flex-col justify-between shadow-2xl">
           <div className="flex justify-between items-start">
             <div>
               <h3 className="text-base sm:text-xl font-bold text-white mb-1">
@@ -222,10 +233,10 @@ export default function DetailedResults({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 sm:gap-4 mt-4 sm:mt-8">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mt-4 sm:mt-8">
             <div className="p-3 sm:p-4 bg-white/5 rounded-xl border border-white/5">
               <p className="text-[10px] text-slate-500 uppercase font-bold mb-1">
-                Remaining
+                Remaining Reg.
               </p>
               <p className="text-base sm:text-xl font-bold text-white">
                 {turnout.total - turnout.voted}

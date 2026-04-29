@@ -8,6 +8,8 @@ import Link from 'next/link';
 interface DashboardData {
   voters: {
     total: number;
+    withEmail: number;
+    registered: number;
     voted: number;
     remaining: number;
     turnout: number;
@@ -54,15 +56,21 @@ export default function AdminDashboardPage() {
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card padding="md" className="bg-surface-800 border-white/5">
-            <div className="text-slate-500 text-xs font-medium uppercase tracking-wider mb-2">Total Voters</div>
+            <div className="text-slate-500 text-xs font-medium uppercase tracking-wider mb-2">In System</div>
             <div className="text-3xl font-bold text-white font-[family-name:var(--font-outfit)]">{data.voters.total}</div>
-            <div className="mt-2 text-xs text-slate-500">Pre-registered eligible members</div>
+            <div className="mt-2 text-xs text-slate-500">All imported phone numbers</div>
           </Card>
 
           <Card padding="md" className="bg-surface-800 border-white/5">
-            <div className="text-brand-400 text-xs font-medium uppercase tracking-wider mb-2">Votes Cast</div>
+            <div className="text-brand-400 text-xs font-medium uppercase tracking-wider mb-2">Registered</div>
+            <div className="text-3xl font-bold text-white font-[family-name:var(--font-outfit)]">{data.voters.registered}</div>
+            <div className="mt-2 text-xs text-slate-500">{data.voters.withEmail} have provided email</div>
+          </Card>
+
+          <Card padding="md" className="bg-surface-800 border-white/5">
+            <div className="text-slate-500 text-xs font-medium uppercase tracking-wider mb-2">Votes Cast</div>
             <div className="text-3xl font-bold text-white font-[family-name:var(--font-outfit)]">{data.voters.voted}</div>
-            <div className="mt-2 text-xs text-slate-500">{data.voters.remaining} members remaining</div>
+            <div className="mt-2 text-xs text-slate-500">{data.voters.remaining} registered remaining</div>
           </Card>
 
           <Card padding="md" className="bg-brand-600/10 border-brand-500/20">
@@ -71,12 +79,7 @@ export default function AdminDashboardPage() {
             <div className="mt-2 h-1.5 w-full bg-surface-900 rounded-full overflow-hidden">
               <div className="h-full bg-brand-500 rounded-full" style={{ width: `${data.voters.turnout}%` }} />
             </div>
-          </Card>
-
-          <Card padding="md" className="bg-surface-800 border-white/5">
-            <div className="text-slate-500 text-xs font-medium uppercase tracking-wider mb-2">Positions</div>
-            <div className="text-3xl font-bold text-white font-[family-name:var(--font-outfit)]">{data.positions}</div>
-            <div className="mt-2 text-xs text-slate-500">Active election categories</div>
+            <div className="mt-1 text-[10px] text-slate-500 text-center">of registered voters</div>
           </Card>
         </div>
 

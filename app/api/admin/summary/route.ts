@@ -11,26 +11,32 @@ export async function GET(req: NextRequest) {
     if ('response' in auth) return auth.response;
 
     const [
-      totalVoters,
+      totalInSystem,
+      totalWithEmail,
+      totalRegistered,
       totalVoted,
       pendingCandidates,
       approvedCandidates,
       totalPositions
     ] = await Promise.all([
       prisma.voter.count(),
+      prisma.voter.count({ where: { email: { not: null } } }),
+      prisma.voter.count({ where: { emailVerified: true } }),
       prisma.voter.count({ where: { hasVoted: true } }),
       prisma.candidate.count({ where: { status: 'PENDING' } }),
       prisma.candidate.count({ where: { status: 'APPROVED' } }),
       prisma.position.count()
     ]);
 
-    const turnout = totalVoters > 0 ? (totalVoted / totalVoters) * 100 : 0;
+    const turnout = totalRegistered > 0 ? (totalVoted / totalRegistered) * 100 : 0;
 
     return success({
       voters: {
-        total: totalVoters,
+        total: totalInSystem,
+        withEmail: totalWithEmail,
+        registered: totalRegistered,
         voted: totalVoted,
-        remaining: totalVoters - totalVoted,
+        remaining: totalRegistered - totalVoted,
         turnout: Number(turnout.toFixed(1))
       },
       candidates: {
