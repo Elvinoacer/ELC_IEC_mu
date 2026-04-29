@@ -53,10 +53,10 @@ export async function GET(req: NextRequest) {
 
     // Colors
     const colors = {
-      primary: [15, 23, 42], // Midnight Blue
-      accent: [220, 38, 38], // ELP Red
-      slate: [100, 116, 139],
-      gold: [161, 98, 7]
+      primary: [15, 23, 42] as [number, number, number],
+      accent: [220, 38, 38] as [number, number, number],
+      slate: [100, 116, 139] as [number, number, number],
+      gold: [161, 98, 7] as [number, number, number]
     };
 
     // Header Background
@@ -99,7 +99,7 @@ export async function GET(req: NextRequest) {
     doc.text(`VOTES CAST: ${totalVoted}`, 106, 40);
 
     // Table
-    autoTable(doc, {
+    (autoTable as any)(doc, {
       startY: 50,
       head: [['#', 'PHONE NUMBER', 'FULL NAME', 'EMAIL ADDRESS', 'REGISTRATION', 'VOTING STATUS', 'JOINED ON']],
       body: voters.map((v, i) => [
@@ -115,8 +115,8 @@ export async function GET(req: NextRequest) {
         fontSize: 8, 
         cellPadding: 4, 
         font: 'helvetica',
-        textColor: [51, 65, 85],
-        lineColor: [241, 245, 249],
+        textColor: [51, 65, 85] as [number, number, number],
+        lineColor: [241, 245, 249] as [number, number, number],
         lineWidth: 0.1,
       },
       headStyles: { 
@@ -127,7 +127,7 @@ export async function GET(req: NextRequest) {
         halign: 'center'
       },
       alternateRowStyles: { 
-        fillColor: [252, 252, 252] 
+        fillColor: [252, 252, 252] as [number, number, number]
       },
       columnStyles: {
         0: { cellWidth: 12, halign: 'center' },
@@ -135,33 +135,33 @@ export async function GET(req: NextRequest) {
         5: { fontStyle: 'bold', halign: 'center' },
         6: { halign: 'center' }
       },
-      didParseCell: (data) => {
+      didParseCell: (data: any) => {
         if (data.section === 'body' && data.column.index === 4) {
           const val = data.cell.text[0];
-          if (val === 'VERIFIED') data.cell.styles.textColor = [22, 101, 52];
+          if (val === 'VERIFIED') data.cell.styles.textColor = [22, 101, 52] as [number, number, number];
           if (val === 'PENDING') data.cell.styles.textColor = colors.gold;
-          if (val === 'NOT LINKED') data.cell.styles.textColor = [153, 27, 27];
+          if (val === 'NOT LINKED') data.cell.styles.textColor = [153, 27, 27] as [number, number, number];
         }
         if (data.section === 'body' && data.column.index === 5) {
           const val = data.cell.text[0];
-          if (val === 'VOTED') data.cell.styles.textColor = [22, 101, 52];
+          if (val === 'VOTED') data.cell.styles.textColor = [22, 101, 52] as [number, number, number];
         }
       },
       margin: { left: 14, right: 14 },
-      didDrawPage: (data) => {
+      didDrawPage: (data: any) => {
         // Footer
-        const pageCount = doc.internal.getNumberOfPages();
+        const pageCount = (doc as any).getNumberOfPages();
         doc.setFontSize(7);
         doc.setTextColor(colors.slate[0], colors.slate[1], colors.slate[2]);
         doc.text(
           `This document is an official record of the ELP Moi Chapter IEC. Unauthorized modification is strictly prohibited.`,
           14,
-          doc.internal.pageSize.height - 10
+          (doc.internal as any).pageSize.height - 10
         );
         doc.text(
           `Page ${data.pageNumber} of ${pageCount}`,
-          doc.internal.pageSize.width - 25,
-          doc.internal.pageSize.height - 10
+          (doc.internal as any).pageSize.width - 25,
+          (doc.internal as any).pageSize.height - 10
         );
       }
     });
