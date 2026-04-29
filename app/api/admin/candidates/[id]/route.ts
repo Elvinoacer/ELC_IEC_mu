@@ -41,12 +41,8 @@ export async function PATCH(
 
     let updateData: any = { ...result.data };
 
-    // [FIX] Prevent position changes once approved or votes exist 
+    // [MOD] Allow position changes but warn/check for votes
     if (result.data.positionId && result.data.positionId !== candidate.positionId) {
-      if (candidate.status === 'APPROVED') {
-        return error('Cannot change position for an approved candidate. Please reject or reset them first.', 403);
-      }
-
       const voteCount = await prisma.vote.count({
         where: { candidateId: candidate.id }
       });
@@ -83,6 +79,50 @@ export async function PATCH(
     );
 
     return success(updated);
+  } catch (err) {
+    return serverError(err);
+  }
+}
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const auth = await requireAdminSession(req);
+    if ('response' in auth) return auth.response;
+
+    const { id } = await params;
+    const candidateId = parseInt(id, 10);
+    if (isNaN(candidateId)) return error('Invalid candidate ID', 400);
+
+    // Ensure candidate exists
+    const candidate = await prisma.candidate.findUnique({ where: { id: candidateId } });
+    if (!candidate) return error('Candidate not found', 404);
+
+    // Check for votes
+    const voteCount = await prisma.vote.count({
+      where: { candidateId: candidateId }
+    });
+
+    if (voteCount > 0) {
+      return error(`Cannot delete a candidate who has ${voteCount} votes. Reset votes first if necessary.`, 403);
+    }
+
+    await prisma.candidate.delete({
+      where: { id: candidateId }
+    });
+
+    await logAudit(
+      req,
+      auth.admin.id,
+      "DELETE_CANDIDATE",
+      "Candidate",
+      candidateId,
+      { deleted: candidate }
+    );
+
+    return success({ message: 'Candidate deleted successfully' });
   } catch (err) {
     return serverError(err);
   }

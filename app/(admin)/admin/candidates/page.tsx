@@ -149,6 +149,33 @@ export default function AdminCandidatesPage() {
     }
   };
 
+  const handleDeleteCandidate = async (id: number) => {
+    if (
+      !window.confirm(
+        "Are you sure you want to delete this candidate? This action is permanent and cannot be undone."
+      )
+    ) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(`/api/admin/candidates/${id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to delete candidate");
+
+      fetchCandidates();
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to delete candidate";
+      alert(message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleStatusUpdate = async (
     id: number,
     status: "APPROVED" | "REJECTED",
@@ -338,7 +365,7 @@ export default function AdminCandidatesPage() {
                   </div>
 
                   <div className="flex justify-between items-center mt-4 pt-4 border-t border-glass-border">
-                    {candidate.status !== "REJECTED" && (
+                    <div className="flex gap-2">
                       <Button
                         size="xs"
                         variant="ghost"
@@ -347,7 +374,16 @@ export default function AdminCandidatesPage() {
                       >
                         Edit Details
                       </Button>
-                    )}
+                      <Button
+                        size="xs"
+                        variant="ghost"
+                        onClick={() => handleDeleteCandidate(candidate.id)}
+                        className="text-error-400 hover:text-error-300 hover:bg-error-500/5"
+                        disabled={isSubmitting}
+                      >
+                        Delete
+                      </Button>
+                    </div>
 
                     {candidate.status === "PENDING" && (
                       <div className="flex gap-2 flex-1 justify-end ml-4">
