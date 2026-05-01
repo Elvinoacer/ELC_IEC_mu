@@ -23,7 +23,7 @@ export default function AuthCard({
   const [step, setStep] = useState<Step>("PHONE");
   const [localPhone, setLocalPhone] = useState("");
   const [normalizedPhone, setNormalizedPhone] = useState("");
-  const [maskedPhone, setMaskedPhone] = useState<string | null>(null);
+  const [maskedEmail, setMaskedEmail] = useState<string | null>(null);
   const [otp, setOtp] = useState<string[]>(Array(6).fill(""));
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const [cooldownUntil, setCooldownUntil] = useState<number>(0);
@@ -123,7 +123,7 @@ export default function AuthCard({
     const data = json.data;
     setStep("OTP");
     setNormalizedPhone(parsed);
-    setMaskedPhone(data.maskedPhone || null);
+    setMaskedEmail(data.maskedEmail || null);
     setExpiresAt(data.expiresAt);
     const seconds = data.cooldownSeconds ?? 60;
     setCooldownUntil(Date.now() + seconds * 1000);
@@ -131,10 +131,10 @@ export default function AuthCard({
     setOtp(Array(6).fill(""));
     if (data.alreadySent) {
       setError(
-        "A valid OTP is already active for this number. Please use the code already sent.",
+        "A valid OTP is already active for this voter account. Please use the code already sent to your email.",
       );
     } else {
-      showSuccess(`OTP sent to ${data.maskedPhone || parsed}`);
+      showSuccess(`OTP sent to ${data.maskedEmail || "your verified email"}`);
     }
     setLoading(false);
   };
@@ -235,9 +235,9 @@ export default function AuthCard({
         <div className="space-y-4">
           <div>
             <p className="text-sm text-slate-300">
-              Code sent to{" "}
+              Code sent to your verified email{" "}
               <span className="font-semibold text-white">
-                {maskedPhone || normalizedPhone}
+                {maskedEmail || "on file"}
               </span>
             </p>
             <button
