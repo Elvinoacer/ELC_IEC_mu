@@ -106,16 +106,31 @@ export default function AuthCard({
 
     const json = await res.json();
     if (!res.ok) {
+      const message = json.error || "Could not send OTP.";
+
       if (res.status === 409) {
-        setAlreadyVotedMessage(
-          "You've already cast your vote! Scroll down to watch live results.",
-        );
-        showInfo("You have already voted.");
-        onAlreadyVoted?.();
+        if (message.toLowerCase().includes("already cast your vote")) {
+          setAlreadyVotedMessage(
+            "You've already cast your vote! Scroll down to watch live results.",
+          );
+          showInfo("You have already voted.");
+          onAlreadyVoted?.();
+          setLoading(false);
+          return;
+        }
+
+        setError(message);
         setLoading(false);
         return;
       }
-      setError(json.error || "Could not send OTP.");
+
+      if (res.status === 404) {
+        setError(message);
+        setLoading(false);
+        return;
+      }
+
+      setError(message);
       setLoading(false);
       return;
     }
