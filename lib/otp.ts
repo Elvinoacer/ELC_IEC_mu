@@ -2,12 +2,11 @@
  * OTP Generation & Verification Service
  *
  * Supports two OTP flows:
- * - VOTE: Vote-day OTP sent to voter's phone via SMS (keyed by phone)
+ * - VOTE: Vote-day OTP sent to voter's verified email (keyed by phone + email)
  * - EMAIL_REG: Email registration OTP sent to unverified email (keyed by email)
  */
 
 import { sendEmailVerificationOTP } from "./email";
-import { sendSMS } from "./sms";
 import { prisma } from "./prisma";
 import { createHash, timingSafeEqual, randomInt } from "crypto";
 
@@ -116,10 +115,11 @@ export async function checkOTPRateLimit(
 }
 
 /**
- * Send a vote-day OTP. Delivers via SMS to the voter's registered phone number.
+ * Send a vote-day OTP. Delivers via email to the voter's verified email address.
  */
 export async function sendOTP(
   phone: string,
+  email: string,
   ipAddress?: string,
 ): Promise<{ expiresAt: Date; smsFailed: boolean }> {
   const code = generateCode();
@@ -136,6 +136,7 @@ export async function sendOTP(
   await prisma.otpRequest.create({
     data: {
       phone,
+      email,
       code: codeHash,
       expiresAt,
       verified: false,
@@ -148,22 +149,19 @@ export async function sendOTP(
     console.log(`\n🔑 [TESTING] OTP for ${phone}: ${code}\n`);
   }
 
-  // Send SMS — but don't let a delivery failure crash the OTP flow.
-  let smsFailed = false;
+  // Send email — but don't let a delivery failure crash the OTP flow.
+  let emailFailed = false;
   try {
-    await sendSMS(
-      phone,
-      `Your ELP Moi Chapter voting OTP is: ${code}. Valid 5 minutes. Do not share.`,
-    );
+    await sendEmailVerificationOTP(email, code);
   } catch (smsErr) {
-    smsFailed = true;
+    emailFailed = true;
     console.error(
-      `[OTP] OTP created for ${phone} but SMS delivery failed:`,
+      `[OTP] OTP created for ${phone} but email delivery failed:`,
       smsErr instanceof Error ? smsErr.message : smsErr,
     );
   }
 
-  return { expiresAt, smsFailed };
+  return { expiresAt, smsFailed: emailFailed };
 }
 
 export type VerifyResult =
